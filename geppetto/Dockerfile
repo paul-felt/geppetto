@@ -3,7 +3,6 @@ MAINTAINER Paul Felt (paul.lewis.felt@gmail.com)
 
 # package in the current code base
 ADD . /code
-ADD ./data /data
 WORKDIR /code
 
 # python deps

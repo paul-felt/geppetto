@@ -6,6 +6,5 @@ services:
      - "5555:5555"
     volumes:
      - .:/code
-     - ./data:/data
   redis:
     image: "redis"
