@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+
+  <head>
+    <title>Riot Router: Complex example</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--[if IE]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-history-api/4.2.4/history.min.js"></script>
+    <![endif]-->
+
+    <!-- nouislider -->
+    <script src="static/nouislider/nouislider.min.js"></script>
+    <link href="static/nouislider/nouislider.css" rel="stylesheet">
+    <!-- jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  </head>
+
+  <body>
+    <app-main></app-main>
+    <app-navi></app-navi>
+    <!--<app-help></app-help>-->
+
+    <!-- riot tags -->
+    <script type="riot/tag" src="../static/app-main.tag"></script>
+    <script type="riot/tag" src="../static/app-navi.tag"></script>
+    <!--<script type="riot/tag" src="../static/app-help.tag"></script>-->
+
+    <!-- scripts we need -->
+    <script src="https://rawgit.com/riot/riot/master/riot%2Bcompiler.min.js"></script>
+    <script src="https://rawgit.com/riot/route/master/dist/route.min.js"></script>
+
+    <!-- mount this app -->
+    <script>
+      riot.compile(function() {
+        riot.mount('*')
+        route.start(true)
+      })
+    </script>
+
+    <style>
+      body { margin: 0 }
+    </style>
+  </body>
+
+</html>
+

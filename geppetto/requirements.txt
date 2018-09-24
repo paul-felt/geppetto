@@ -1,2 +1,4 @@
 Flask==1.0.2
 Flask-SocketIO==3.0.2
+redis==2.10.3
+gevent==1.1.0
