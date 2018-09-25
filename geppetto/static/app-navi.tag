@@ -1,20 +1,25 @@
 <app-navi>
 
-  <a each={ links } href="#{ url }" class={ selected: parent.selectedId === url }>
-    { name }
+  <a each={ opts.robots } href="#{ robot_name }" class={ selected: parent.selectedId === robot_name }>
+    { robot_short_name }
   </a>
 
   <script>
     var self = this
 
-    this.links = [
-      { name: "H", url: "" },
-      { name: "F", url: "first" },
-      { name: "S", url: "second" }
-    ]
-
     var r = route.create()
     r(highlightCurrent)
+
+    // What do we call robots in the sidebar? 
+    // For now just a number
+    function computeShortName(robot_name, idx){
+      return idx;
+    }
+
+    var i;
+    for (i = 0; i<self.opts.robots.length; i++){
+      self.opts.robots[i]['robot_short_name'] = computeShortName(self.opts.robots[i], i+1);
+    }
 
     function highlightCurrent(id) {
       self.selectedId = id

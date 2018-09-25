@@ -2,90 +2,106 @@
 
   <article>
     <h1>{ title }</h1>
-    <p>{ body }</p>
-    <ul if={ isFirst }>
-      <li each={ data }><a href="#first/{ id }">{ title }</a></li>
-    </ul>
-    <div id="slider"></div>
+    <p>{ description }</p>
+    <robot-detail>
   </article>
+
+  <robot-detail>
+    <!-- Sensors -->
+    <h3>Sensors</h3>
+    <ul>
+      <li each={ sensors }><a href="#sensor_name">{ sensor_name }</a></li>
+    </ul>
+    <!-- Controls -->
+    <h3>Controls</h3>
+    <div each={ controls }>
+      <p> { control_name } </p>
+      <div id="slider_{control_name}"></div>
+    </div>
+  </robot-detail>
+
 
   <script>
     var self = this
-    self.title = 'Now loading...'
-    self.body = ''
-    self.data = [
-      { id: 'apple', title: 'Apple', body: "The world biggest fruit company." },
-      { id: 'orange', title: 'Orange', body: "I don't have the word for it..." }
-    ]
+    self.title = 'Loading...'
+    self.description = ''
 
     var r = route.create()
     r('',        home       )
-    r('first',   first      )
-    r('first/*', firstDetail)
-    r('second',  second     )
+    r('*',   robot_page      )
     r(           home       ) // `notfound` would be nicer!
+
+    function buildSliders(){
+      for (control_idx in self.controls){
+        var control = self.controls[control_idx]
+        var control_name = control['control_name'];
+        var control_limits = control['limits'];
+        // SLIDER
+        var slider=document.getElementById(`slider_${control_name}`);
+        noUiSlider.create(slider, {
+          start: 20, //num, [num], [num,num]
+          range: {
+            'min': control_limits[0],
+            'max': control_limits[1]
+          },
+          behaviour: 'drag-tap',
+          connect: true,
+          //margin: 30,
+          //limit: 40,
+          //step: 1,
+          orientation: 'horizontal',
+          animate: true,
+        	animationDuration: 300,
+          tooltips:true //[true,true]
+        });
+
+        var timer;
+
+        // we need to create a closure to keep the right control_name in scope for our callback
+        (function(control_name){
+          // slider activate: start a timer going until we release this slider
+          slider.noUiSlider.on('start',function(values, handle, unencoded, tap, positions ){		
+          currSlider = this;
+            timer=setInterval(function(){
+                $.post(`/robots/${self.robot_name}/controls/${sliderControlName}`, currSlider.get());
+              }, 100); // the above code is executed every 100 ms
+          })
+
+          // slider release: cancel the timer
+          slider.noUiSlider.on('end',function(values, handle, unencoded, tap, positions ){		
+            if (timer) clearInterval(timer)
+          })
+          // single slider set. one and done
+          slider.noUiSlider.on('set',function(values, handle, unencoded, tap, positions ){		
+            sliderControlName = control_name;
+            $.post(`/robots/${self.robot_name}/controls/${sliderControlName}`, values[0]);
+          })
+          //slider.noUiSlider.destroy()
+        })(control_name);
+      } // end for
+    }
 
     function home() {
       self.update({
-        title:  "Home of the great app",
-        body:  "Timeline or dashboard as you like!",
-        isFirst: false
-      })
-    }
-    function first() {
-      self.update({
-        title: "First feature of your app",
-        body: "It could be a list of something for example.",
-        isFirst: true
-      })
-    }
-    function firstDetail(id) {
-      var selected = self.data.filter(function(d) { return d.id == id })[0] || {}
-      self.update({
-        title: selected.title,
-        body: selected.body,
-        isFirst: false
-      })
-    }
-    function second() {
-      self.update({
-        title: "Second feature of your app",
-        body: "It could be a config page for example.",
-        isFirst: false
+        title:  "Welcome to Geppetto",
+        description:  "Your robots are listed in tabs"
       })
     }
 
-    // only instantiate the slider after the page/tag has mounted so we can find the 'slider' id in the doc
-    this.on('mount', function(){
-      // SLIDER
-      var slider=document.getElementById('slider');
-      noUiSlider.create(slider, {
-        start: [20,40], //num, [num], [num,num]
-        range: {
-          'min': [0],
-          'max': [100]
-        },
-        behaviour: 'drag-tap',
-        connect: true,
-        //margin: 30,
-        //limit: 40,
-        step: 10,
-        orientation: 'horizontal',
-        animate: true,
-      	animationDuration: 300,
-        tooltips:[true,true]
+    function robot_page(robot_name) {
+      self.update({
+        title:  robot_name,
+        description:  "Loading...",
+        controls: [],
+        sensors: [],
       });
-      slider.noUiSlider.on('slide',function(values, handle, unencoded, tap, positions ){		
-         var tempSlider=$(slider);
-        tempSlider.find('.noUi-base').css('background','red');
-        tempSlider.find('.noUi-base > .noUi-connect').css('background','green');
-        tempSlider.find('.noUi-base .noUi-handle.noUi-handle-lower').css('background','green');
-        tempSlider.find('.noUi-base .noUi-handle.noUi-handle-upper').css('background','pink');
-        tempSlider.find('.noUi-base > .noUi-connect').css('background','green');
-        tempSlider.find('.noUi-base > .noUi-background').css('background','blue');
-      })
-      //slider.noUiSlider.destroy()
-    });
+      $.get(`/robots/${robot_name}`, function(robot_info){
+        robot_info['description'] = ''; 
+        self.update(robot_info)
+        buildSliders();
+      });
+    }
+
   </script>
 
   <style>

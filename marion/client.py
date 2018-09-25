@@ -79,9 +79,19 @@ class DummyControl(Control):
     def apply_control(self,signal):
         print 'applying control: %s: %s'%(self.get_socketio_name(),signal)
 
-for sensor in [DummySensor('mock-robot','sensor1'), DummySensor('mock-robot','sensor2')]:
+for sensor in [
+            DummySensor('mock-robot1','sensor1'), 
+            DummySensor('mock-robot1','sensor2'),
+            DummySensor('mock-robot2','sensor1'),
+            DummySensor('mock-robot2','sensor2'),
+            ]:
     register_sensor(sensor)
     
-for control in [DummyControl('mock-robot','control1'), DummyControl('mock-robot','control2')]:
+for control in [
+            DummyControl('mock-robot1','control1'), 
+            DummyControl('mock-robot1','control2'),
+            DummyControl('mock-robot2','control1'), 
+            DummyControl('mock-robot2','control2'),
+            ]:
     register_control(control)
 
