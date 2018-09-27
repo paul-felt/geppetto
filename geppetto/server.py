@@ -11,6 +11,15 @@ app = Flask(__name__)
 db = redis.StrictRedis('redis', 6379, 0)
 socketio = SocketIO(app)
 
+import logging
+#logging.getLogger('werkzeug').setLevel(logging.ERROR)
+logging.getLogger('werkzeug').disabled = True
+app.logger.disabled = True
+#logging.basicConfig(level=logging.WARN)
+
+#from flask.logging import default_handler
+#app.logger.removeHandler(default_handler)
+
 __version__ = "0.0.1"
 
 def new_robot_db_entry():
