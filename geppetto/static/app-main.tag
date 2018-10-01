@@ -64,7 +64,7 @@
           currSlider = this;
           timer=setInterval(function(){
                 $.post(`/robots/${self.robot_name}/controls/${control_name}`, currSlider.get());
-              }, 100); // the above code is executed every 100 ms
+              }, 20); // the above code is executed every 100 ms
           })
 
           // slider release: cancel the timer
