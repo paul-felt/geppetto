@@ -1,12 +1,12 @@
 import argparse
 import logging
-from multiprocessing import Process
-#from threading import Thread as Process
+#from multiprocessing import Process
+from threading import Thread as Process
 import time
 from socketIO_client import SocketIO, LoggingNamespace
 
 logging.getLogger('requests').setLevel(logging.WARNING)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 
 sensors = []
 def register_sensor(sensor):

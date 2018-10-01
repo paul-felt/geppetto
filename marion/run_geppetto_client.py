@@ -22,13 +22,13 @@ if __name__ == '__main__':
 #                ]:
 #        geppetto_client.register_sensor(sensor)
 
-    for control in [
-                DummyControl(args.host, args.port, 'mock-robot1','control1'), 
-                DummyControl(args.host, args.port, 'mock-robot1','control2'),
-                DummyControl(args.host, args.port, 'mock-robot2','control1'), 
-                DummyControl(args.host, args.port, 'mock-robot2','control2'),
-                ]:
-        geppetto_client.register_control(control)
+    #for control in [
+    #            DummyControl(args.host, args.port, 'mock-robot1','control1'), 
+    #            DummyControl(args.host, args.port, 'mock-robot1','control2'),
+    #            DummyControl(args.host, args.port, 'mock-robot2','control1'), 
+    #            DummyControl(args.host, args.port, 'mock-robot2','control2'),
+    #            ]:
+    #    geppetto_client.register_control(control)
 
     geppetto_client.register_sensor(PicamSensor(args.host, args.port, 'marion', 'picam'))
  
