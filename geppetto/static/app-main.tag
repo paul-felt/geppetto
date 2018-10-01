@@ -62,8 +62,8 @@
           // slider activate: start a timer going until we release this slider
           slider.noUiSlider.on('start',function(values, handle, unencoded, tap, positions ){		
           currSlider = this;
-            timer=setInterval(function(){
-                $.post(`/robots/${self.robot_name}/controls/${sliderControlName}`, currSlider.get());
+          timer=setInterval(function(){
+                $.post(`/robots/${self.robot_name}/controls/${control_name}`, currSlider.get());
               }, 100); // the above code is executed every 100 ms
           })
 
@@ -73,8 +73,7 @@
           })
           // single slider set. one and done
           slider.noUiSlider.on('set',function(values, handle, unencoded, tap, positions ){		
-            sliderControlName = control_name;
-            $.post(`/robots/${self.robot_name}/controls/${sliderControlName}`, values[0]);
+            $.post(`/robots/${self.robot_name}/controls/${control_name}`, values[0]);
           })
           //slider.noUiSlider.destroy()
         })(control_name);
