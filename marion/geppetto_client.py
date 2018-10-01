@@ -1,7 +1,6 @@
 import argparse
 import logging
-#from multiprocessing import Process
-from threading import Thread as Process
+from multiprocessing import Process
 import time
 from socketIO_client import SocketIO, LoggingNamespace
 
