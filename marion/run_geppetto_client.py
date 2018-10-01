@@ -3,6 +3,7 @@ import logging
 import geppetto_client
 from geppetto_client import DummySensor, DummyControl
 from picam_sensor import PicamSensor
+from adafruit_pca9685_control import AdaFruitPCA9685Control
 
 logging.getLogger('requests').setLevel(logging.WARNING)
 logging.basicConfig(level=logging.INFO)
@@ -30,5 +31,10 @@ if __name__ == '__main__':
     #            ]:
     #    geppetto_client.register_control(control)
 
-    geppetto_client.register_sensor(PicamSensor(args.host, args.port, 'marion', 'picam'))
+    #geppetto_client.register_sensor(PicamSensor(args.host, args.port, 'marion', 'picam'))
+    # Mearm controls
+    geppetto_client.register_control(AdaFruitPCA9685Control(args.host, args.port, 'marion', 'twist', 0, min_limit=350, max_limit=450))
+    geppetto_client.register_control(AdaFruitPCA9685Control(args.host, args.port, 'marion', 'height', 1, min_limit=150, max_limit=280))
+    geppetto_client.register_control(AdaFruitPCA9685Control(args.host, args.port, 'marion', 'forward', 2, min_limit=280, max_limit=450))
+    geppetto_client.register_control(AdaFruitPCA9685Control(args.host, args.port, 'marion', 'claw', 3, min_limit=150, max_limit=370))
  
