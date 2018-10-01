@@ -47,7 +47,7 @@ def get_robot_infos():
     return [get_robot_info(robot_name) for robot_name in get_robots()]
 
 def get_controls(robot_name):
-    return db.smembers('controls:%s'%robot_name)
+    return sorted(db.smembers('controls:%s'%robot_name))
 
 def get_control_socketio(robot_name, control_name):
     return db.get('control-socketio:%s:%s'%(robot_name,control_name))
@@ -74,7 +74,7 @@ def get_robot_info(robot_name):
             }
 
 def get_sensors(robot_name):
-    return db.smembers('sensors:%s'%robot_name)
+    return sorted(db.smembers('sensors:%s'%robot_name))
 
 def get_sensor_socketio(robot_name, sensor_name):
     return db.get('sensor-socketio:%s:%s'%(robot_name,sensor_name))
