@@ -10,10 +10,15 @@
     <!-- Sensors -->
     <h3>Sensors</h3>
     <ul>
-      <li each={ sensors }><image id="sensor_{sensor_name}"></image></li>
+      <li each={ sensors }>
+        <image if={mediatype==="video"} id="sensor_{sensor_name}"></image>
+        <!-- TODO: support other mediatypes -->
+        <audio if={mediatype==="mp3"} id="sensor_{sensor_name}"></audio>
+      </li>
     </ul>
     <!-- Controls -->
     <h3>Controls</h3>
+    <ul>
     <div each={ controls }>
       <p> { control_name } </p>
       <div id="slider_{control_name}"></div>
