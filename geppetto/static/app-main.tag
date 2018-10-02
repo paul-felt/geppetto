@@ -10,7 +10,7 @@
     <!-- Sensors -->
     <h3>Sensors</h3>
     <ul>
-      <li each={ sensors }><a href="#sensor_name">{ sensor_name }</a></li>
+      <li each={ sensors }><image id="sensor_{sensor_name}"></image></li>
     </ul>
     <!-- Controls -->
     <h3>Controls</h3>
@@ -22,6 +22,8 @@
 
 
   <script>
+    var socket = io();
+
     var self = this
     self.title = 'Loading...'
     self.description = ''
@@ -77,7 +79,25 @@
           })
           //slider.noUiSlider.destroy()
         })(control_name);
-      } // end for
+      } // end for controls
+
+    } // end build sliders
+
+    function openSockets(){
+      for (sensor_idx in self.sensors){
+        var sensor = self.sensors[sensor_idx]
+        var sensor_socketio = sensor['socketio'];
+        var sensor_name = sensor['sensor_name'];
+        // closure to keep sensor name in scope
+        (function(sensor_name){
+          socket.on(sensor_socketio, function(data){
+            console.log(`got video for ${sensor_name}: ${data}`);
+            var blob = new Blob([data], { type: 'image/jpeg' });
+            var objectUrl = URL.createObjectURL(blob);
+            $(`#sensor_${sensor_name}`).attr("src",objectUrl);
+          });
+        })(sensor_name);
+      }
     }
 
     function home() {
@@ -98,6 +118,7 @@
         robot_info['description'] = ''; 
         self.update(robot_info)
         buildSliders();
+        openSockets();
       });
     }
 
