@@ -10,10 +10,15 @@
     <!-- Sensors -->
     <h3>Sensors</h3>
     <ul>
-      <li each={ sensors }><a href="#sensor_name">{ sensor_name }</a></li>
+      <li each={ sensors }>
+        <image if={mediatype==="video"} id="sensor_{sensor_name}"></image>
+        <!-- TODO: support other mediatypes -->
+        <audio if={mediatype==="mp3"} id="sensor_{sensor_name}"></audio>
+      </li>
     </ul>
     <!-- Controls -->
     <h3>Controls</h3>
+    <ul>
     <div each={ controls }>
       <p> { control_name } </p>
       <div id="slider_{control_name}"></div>
@@ -22,6 +27,8 @@
 
 
   <script>
+    var socket = io();
+
     var self = this
     self.title = 'Loading...'
     self.description = ''
@@ -64,7 +71,7 @@
           currSlider = this;
           timer=setInterval(function(){
                 $.post(`/robots/${self.robot_name}/controls/${control_name}`, currSlider.get());
-              }, 100); // the above code is executed every 100 ms
+              }, 20); // the above code is executed every 100 ms
           })
 
           // slider release: cancel the timer
@@ -77,7 +84,25 @@
           })
           //slider.noUiSlider.destroy()
         })(control_name);
-      } // end for
+      } // end for controls
+
+    } // end build sliders
+
+    function openSockets(){
+      for (sensor_idx in self.sensors){
+        var sensor = self.sensors[sensor_idx]
+        var sensor_socketio = sensor['socketio'];
+        var sensor_name = sensor['sensor_name'];
+        // closure to keep sensor name in scope
+        (function(sensor_name){
+          socket.on(sensor_socketio, function(data){
+            console.log(`got video for ${sensor_name}: ${data}`);
+            var blob = new Blob([data], { type: 'image/jpeg' });
+            var objectUrl = URL.createObjectURL(blob);
+            $(`#sensor_${sensor_name}`).attr("src",objectUrl);
+          });
+        })(sensor_name);
+      }
     }
 
     function home() {
@@ -98,6 +123,7 @@
         robot_info['description'] = ''; 
         self.update(robot_info)
         buildSliders();
+        openSockets();
       });
     }
 

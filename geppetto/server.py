@@ -9,12 +9,12 @@ from flask_socketio import SocketIO
 
 app = Flask(__name__)
 db = redis.StrictRedis('redis', 6379, 0)
-socketio = SocketIO(app)
+socketio = SocketIO(app, binary=True)
 
 import logging
 #logging.getLogger('werkzeug').setLevel(logging.ERROR)
-logging.getLogger('werkzeug').disabled = True
-app.logger.disabled = True
+#logging.getLogger('werkzeug').disabled = True
+#app.logger.disabled = True
 #logging.basicConfig(level=logging.WARN)
 
 #from flask.logging import default_handler
@@ -64,7 +64,8 @@ def get_control_info(robot_name, control_name):
 
 def get_sensor_info(robot_name, sensor_name):
     return {'sensor_name': sensor_name,
-            'mediatype': get_sensor_mediatype(robot_name, sensor_name)}
+            'mediatype': get_sensor_mediatype(robot_name, sensor_name),
+            'socketio': get_sensor_socketio(robot_name, sensor_name)}
 
 def get_robot_info(robot_name):
     return {
@@ -155,12 +156,12 @@ def rest_post_control(robot_name, control_name):
 
 @socketio.on('connect')
 def ws_conn():
-    print('connected')
+    app.logger.info('connected')
     socketio.emit('msg', {'version': __version__})
 
 @socketio.on('disconnect')
 def ws_disconn():
-    print('disconnected')
+    app.logger.info('disconnected')
     socketio.emit('msg', {'version': __version__})
 
 @socketio.on('register-sensor')
@@ -177,12 +178,14 @@ def ws_register_sensor(message):
     db['sensor-socketio:%s:%s'%(robot_name, sensor_name)] = socketio_name
     # remember this sensor's type
     db['sensor-mediatype:%s:%s'%(robot_name, sensor_name)] = mediatype
-    print('got sensor registration: %s'%message)
+    app.logger.info('got sensor registration: %s'%message)
 
 @socketio.on('sensor')
 def ws_sensor(message):
-    print('got sensor message: %s'%message)
+    app.logger.info('got sensor message: %s, len=%s'%(message[0], len(message[1])))
+    #app.logger.info('%s'%message)
     socketio_name, signal = message
+    socketio.emit(socketio_name, signal)
 
 @socketio.on('register-control')
 def ws_register_control(message):
@@ -199,7 +202,7 @@ def ws_register_control(message):
     # remember this control's limits
     db['control-min:%s:%s'%(robot_name, control_name)] = min_limit
     db['control-max:%s:%s'%(robot_name, control_name)] = max_limit
-    print('got control registration: %s'%message)
+    app.logger.info('got control registration: %s'%message)
 
 
 if __name__ == '__main__':
