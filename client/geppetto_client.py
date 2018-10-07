@@ -1,102 +1,81 @@
 import argparse
 import logging
-from multiprocessing import Process
 import time
-from socketIO_client import SocketIO, LoggingNamespace
+import requests
+import asyncio
 
 logging.getLogger('requests').setLevel(logging.WARNING)
 logging.basicConfig(level=logging.ERROR)
 
-sensors = []
-def register_sensor(sensor):
-    sensors.append(sensor)
-    sensor.start()
+class Register(object):
+    def __init__(self, url, port):
+        self.url = url
+        self.port = port
 
-controls = []
-def register_control(control):
-    controls.append(control)
-    control.start()
+    def control_url(robot_name, control_name):
+        return "{url}:{port}/robots/{robot_name}/controls/{control_name}".format(
+            url=self.url,
+            port=self.web_port,
+            robot_name=robot_name,
+            control_name=control_name,
+        )
+    def sensor_url(robot_name, sensor_name):
+        return "{url}:{port}/robots/{robot_name}/sensors/{sensor_name}".format(
+            url=self.url,
+            port=self.web_port,
+            robot_name=robot_name,
+            sensor_name=sensor_name,
+        )
 
-class Signal(Process):
-    def __init__(self, host, port, robot_name, signal_name):
-        self.host=host
-        self.port=port
+    def __enter__(self):
+        ' Just make sure the rest interface responds in the most basic way '
+        requests.get("{url}:{port}/robots".format(
+            url=self.url,
+            port=self.web_port,
+        ))
+    def __exit__(self, type, value, traceback):
+        ' Delete from the rest api all sensors and controls in this register '
+        for robot_name, sensor_name in self.sensors:
+            url = self.sensor_url(robot_name, sensor_name)
+            requests.delete(url)
+        for robot_name, control_name in self.controls:
+            url = self.control_url(robot_name, control_name)
+            requests.delete(url)
+        # TODO: delete robot itself if necessary
+
+    def add_sensor(self, sensor):
+        url = self.sensor_url(sensor.robot_name, sensor.sensor_name)
+        requests.post(url, data = {'channel_name':self.channel_name,
+                                    'mediatype':self.get_mediatype()})
+    def add_control(self, control):
+        url = self.control_url(control.robot_name, control.control_name)
+        requests.post(url, data = {'channel_name':self.channel_name,
+                                    'limits':self.get_limits()})
+
+class Signal(ApplicationSession):
+    def __init__(self, robot_name, signal_name):
         self.robot_name = robot_name
         self.signal_name = signal_name
-        super(Signal, self).__init__()
-    def get_socketio_name(self):
-        return '{}-{}'.format(self.robot_name, self.signal_name)
-    def run_with_socket(self,socketIO):
+        self.channel_name = '{}.{}'.format(self.robot_name, self.signal_name)
+    def run(self, session):
         raise NotImplementedError()
-    def register_signal(self,socketIO):
-        raise NotImplementedError()
-    def run(self):
-        with SocketIO(self.host, self.port) as socketIO:
-            self.register_signal(socketIO)
-            self.run_with_socket(socketIO)
 
 class Control(Signal):
     def apply_control(self,signal):
         raise NotImplementedError()
     def get_limits(self):
         raise NotImplementedError()
-    def register_signal(self,socketIO):
-        socketIO.emit('register-control', {
-                                        'robot_name':self.robot_name,
-                                        'control_name':self.signal_name,
-                                        'socketio_name':self.get_socketio_name(),
-                                        'limits':self.get_limits()})
-    def run_with_socket(self, socketIO):
-        socketIO.on(self.get_socketio_name(),self.apply_control)
-        socketIO.wait()
+    async def run(self, session):
+        self.subscribe(self.apply_control, self.channel_name)
+        while True:
+            await asyncio.sleep(0)
 
 class Sensor(Signal):
     def get_reading(self):
         raise NotImplementedError()
     def get_mediatype(self):
         raise NotImplementedError()
-    def register_signal(self,socketIO):
-        socketIO.emit('register-sensor', {
-                                        'robot_name':self.robot_name,
-                                        'sensor_name':self.signal_name,
-                                        'socketio_name':self.get_socketio_name(),
-                                        'mediatype':self.get_mediatype()})
-    def run_with_socket(self, socketIO):
+    async def run(self, session):
         while True:
-            socketIO.emit('sensor', (self.get_socketio_name(), self.get_reading()))
-
-class DummySensor(Sensor):
-    def get_mediatype(self):
-        return 'video'
-    def get_reading(self):
-        time.sleep(30)
-        return time.time()
-
-class DummyControl(Control):
-    def get_limits(self):
-        return 0,180
-    def apply_control(self,signal):
-        print('applying control: %s: %s'%(self.get_socketio_name(),signal))
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--host', default='localhostl', help='The host that geppetto is running on')
-    parser.add_argument('-p', '--port', default=5000, type=int, help='The port that geppetto is running on')
-    args = parser.parse_args()
-
-    for sensor in [
-                DummySensor(args.host, args.port, 'mock-robot1','sensor1'), 
-                DummySensor(args.host, args.port, 'mock-robot1','sensor2'),
-                DummySensor(args.host, args.port, 'mock-robot2','sensor1'),
-                DummySensor(args.host, args.port, 'mock-robot2','sensor2'),
-                ]:
-        register_sensor(sensor)
-        
-    for control in [
-                DummyControl(args.host, args.port, 'mock-robot1','control1'), 
-                DummyControl(args.host, args.port, 'mock-robot1','control2'),
-                DummyControl(args.host, args.port, 'mock-robot2','control1'), 
-                DummyControl(args.host, args.port, 'mock-robot2','control2'),
-                ]:
-        register_control(control)
+            await self.publish(self.channel_name, self.get_reading())
 

@@ -1,6 +1,0 @@
-# at time of writing, this client didn't work with binary
-#socketio-client=0.7.2
-# but a github repo exists w a patch for it
-git+git://github.com/wwqgtxx/socketIO-client.git#egg=socketio_client==0.7.3
-# adafruit servo driver
-git+git://github.com/adafruit/Adafruit_Python_PCA9685.git#egg=adafruit-pca9685

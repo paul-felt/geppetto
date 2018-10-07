@@ -7,6 +7,7 @@ services:
   # 2) discover where to look for realtime signals
   #
   web:
+    container_name: gp_web 
     build: './docker/flask'
     ports:
      - "80:80"
@@ -19,9 +20,9 @@ services:
     # 1) production server
     #command: flask run --host=0.0.0.0 --port=80
     # 2) debug flask server
-    #command: python main.py
+    command: python main.py
     # 3) keep it alive, for debugging
-    command: sleep 99999999
+    #command: sleep 99999999
     logging:
       driver: json-file
       options:
@@ -30,6 +31,7 @@ services:
 
   # Redis doesn't need to be externally accessible, so no ports
   redis:
+    container_name: gp_redis
     image: "redis"
     volumes:
      - ./redis-data:/data
@@ -42,11 +44,13 @@ services:
   # The wamp server handles realtime signal communication
   # on the channels registered in the rest api.
   wamp:
+    container_name: gp_wamp
     image: "crossbario/crossbar"
     ports:
-     - "5555:5555"
+     - "8080:8080"
     logging:
       driver: json-file
       options:
         max-size: "100K"
         max-file: "10"
+

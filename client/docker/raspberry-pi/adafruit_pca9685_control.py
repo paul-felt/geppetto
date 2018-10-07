@@ -29,5 +29,5 @@ class AdaFruitPCA9685Control(geppetto_client.Control):
     def apply_control(self, signal):
         print('%s-%s: applying control %s' % (self.robot_name,self.signal_name, signal))
         assert self.min_limit <= signal and signal <= self.max_limit
-	self.pwm.set_pwm(self.channel, 0, int(signal))
+    self.pwm.set_pwm(self.channel, 0, int(signal))
 
