@@ -2,8 +2,9 @@ import argparse
 import logging
 import time
 import requests
+import asyncio
 
-from autobahn.asyncio.wamp import Component, run
+from autobahn.asyncio.component import Component, run
 from geppetto_client import Control, Sensor, Register
 
 logging.getLogger('requests').setLevel(logging.WARNING)
@@ -13,14 +14,13 @@ class DummySensor(Sensor):
     def get_mediatype(self):
         return 'video'
     def get_reading(self):
-        time.sleep(30)
         return time.time()
 
 class DummyControl(Control):
     def get_limits(self):
         return 0,180
     def apply_control(self,signal):
-        print('applying control: %s: %s'%(self.get_channel_name(),signal))
+        print('applying control: %s: %s'%(self.channel_name, signal))
 
 
 if __name__ == '__main__':
@@ -37,34 +37,43 @@ if __name__ == '__main__':
         realm=u"realm1",
     )
 
+    # Register is in charge of adding/removing robots from the rest api
+    with Register(args.host, args.web_port, args.wamp_port) as register:
 
-    # 2) callback: define robots after we join a wamp session
-    @component.on_join
-    def on_wamp_join(session, details):
+        register.add_sensor (DummySensor ('mock-robot1','sensor1'))
+        register.add_sensor (DummySensor ('mock-robot1','sensor2'))
+        register.add_control(DummyControl('mock-robot1','control1'))
+        register.add_control(DummyControl('mock-robot1','control2'))
 
-        # Register is in charge of adding/removing robots from the rest api
-        with Register(args.host, args.web_port) as register:
+        register.add_sensor (DummySensor ('mock-robot2','sensor1'))
+        register.add_sensor (DummySensor ('mock-robot2','sensor2'))
+        register.add_control(DummyControl('mock-robot2','control1'))
+        register.add_control(DummyControl('mock-robot2','control2'))
+        register.run()
 
-            # fire up the sensors
-            for sensor in [
-                            DummySensor('mock-robot1','sensor1'), 
-                            DummySensor('mock-robot1','sensor2'),
-                            DummySensor('mock-robot2','sensor1'), 
-                            DummySensor('mock-robot2','sensor2'),
-                          ]:
-                register.add_sensor(sensor)
-                sensor.run(session)
+    #    # 2) callback: define robots after we join a wamp session
+    #    @component.on_join
+    #    async def on_wamp_join(session, details):
 
-            # fire up the controls
-            for control in [
-                            DummyControl('mock-robot1','control1'), 
-                            DummyControl('mock-robot1','control2'),
-                            DummyControl('mock-robot2','control1'), 
-                            DummyControl('mock-robot2','control2'),
-                           ]:
-                register.add_control(control)
-                control.run(session)
+    #        # fire up the sensors
+    #        for sensor in [
+    #                        DummySensor('mock-robot1','sensor1'), 
+    #                        DummySensor('mock-robot1','sensor2'),
+    #                        DummySensor('mock-robot2','sensor1'), 
+    #                        DummySensor('mock-robot2','sensor2'),
+    #                      ]:
+    #            register.add_sensor(sensor)
+    #            sensor.run(session)
 
+    #        # fire up the controls
+    #        for control in [
+    #                        DummyControl('mock-robot1','control1'), 
+    #                        DummyControl('mock-robot1','control2'),
+    #                        DummyControl('mock-robot2','control1'), 
+    #                        DummyControl('mock-robot2','control2'),
+    #                       ]:
+    #            register.add_control(control)
+    #            control.run(session)
 
-    # 3) get the ball rolling by actually firing up the wamp server
-    run([component])
+    ## 3) get the ball rolling by actually firing up the wamp server
+    #run([component])

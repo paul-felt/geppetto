@@ -29,7 +29,7 @@ def control_robot(robot_name, control_name, signal):
     signal = min(signal, max_limit)
     signal = max(signal, min_limit)
     app.logger.debug("Limited Robot control: %s",signal)
-    #socketio.emit(get_control_socketio(robot_name, control_name), signal)
+    #channel.emit(get_control_channel(robot_name, control_name), signal)
 
 def get_robots():
     return sorted(s.decode('utf-8') for s in db.smembers('robots'))
@@ -60,9 +60,9 @@ def add_control(robot_name, control_info):
     if 'control_name' not in control_info:
         abort(400, 'control lacks required field: control_name')
     control_name = control_info['control_name']
-    if 'socketio_name' not in control_info:
-        abort(400, 'control lacks required field: socketio_name')
-    socketio_name = control_info['socketio_name']
+    if 'channel_name' not in control_info:
+        abort(400, 'control lacks required field: channel_name')
+    channel_name = control_info['channel_name']
     if 'limits' not in control_info:
         abort(400, 'control lacks required field: limits')
     raw_limits = control_info['limits']
@@ -75,8 +75,8 @@ def add_control(robot_name, control_info):
     print('XXX',robot_name,control_name)
     db.sadd('controls:%s'%robot_name, control_name)
     print('YYY',get_controls(robot_name))
-    # remember this control's socketio_name
-    db['control-socketio:%s:%s'%(robot_name, control_name)] = socketio_name
+    # remember this control's channel_name
+    db['control-channel:%s:%s'%(robot_name, control_name)] = channel_name
     # remember this control's limits
     db['control-min:%s:%s'%(robot_name, control_name)] = min_limit
     db['control-max:%s:%s'%(robot_name, control_name)] = max_limit
@@ -84,12 +84,12 @@ def add_control(robot_name, control_info):
 
 def delete_control(robot_name, control_name):
     db.srem('controls:%s'%robot_name, control_name)
-    db.delete('control-socketio:%s:%s'%(robot_name, control_name))
+    db.delete('control-channel:%s:%s'%(robot_name, control_name))
     db.delete('control-min:%s:%s'%(robot_name, control_name))
     db.delete('control-max:%s:%s'%(robot_name, control_name))
 
-def get_control_socketio(robot_name, control_name):
-    return db.get('control-socketio:%s:%s'%(robot_name,control_name)).decode('utf-8')
+def get_control_channel(robot_name, control_name):
+    return db.get('control-channel:%s:%s'%(robot_name,control_name)).decode('utf-8')
 
 def get_control_limits(robot_name, control_name):
     return (
@@ -100,12 +100,12 @@ def get_control_limits(robot_name, control_name):
 def get_control_info(robot_name, control_name):
     return {'control_name': control_name,
             'limits': get_control_limits(robot_name, control_name),
-            'socketio_name': get_control_socketio(robot_name, control_name)}
+            'channel_name': get_control_channel(robot_name, control_name)}
 
 def get_sensor_info(robot_name, sensor_name):
     return {'sensor_name': sensor_name,
             'mediatype': get_sensor_mediatype(robot_name, sensor_name),
-            'socketio_name': get_sensor_socketio(robot_name, sensor_name)}
+            'channel_name': get_sensor_channel(robot_name, sensor_name)}
 
 def get_robot_info(robot_name):
     return {
@@ -124,9 +124,9 @@ def add_sensor(robot_name, sensor_info):
     if 'sensor_name' not in sensor_info:
         abort(400, 'sensor lacks required field: sensor_name')
     sensor_name = sensor_info['sensor_name']
-    if 'socketio_name' not in sensor_info:
-        abort(400, 'sensor lacks required field: socketio_name')
-    socketio_name = sensor_info['socketio_name']
+    if 'channel_name' not in sensor_info:
+        abort(400, 'sensor lacks required field: channel_name')
+    channel_name = sensor_info['channel_name']
     if 'mediatype' not in sensor_info:
         abort(400, 'sensor lacks required field: mediatype')
     mediatype = sensor_info['mediatype']
@@ -134,8 +134,8 @@ def add_sensor(robot_name, sensor_info):
     add_robot_name(robot_name)
     # add to this robot's set of sensors
     db.sadd('sensors:%s'%robot_name, sensor_name)
-    # remember this sensor's socketio_name
-    db['sensor-socketio:%s:%s'%(robot_name, sensor_name)] = socketio_name
+    # remember this sensor's channel_name
+    db['sensor-channel:%s:%s'%(robot_name, sensor_name)] = channel_name
     # remember this sensor's mediatype
     db['sensor-mediatype:%s:%s'%(robot_name, sensor_name)] = mediatype
     app.logger.info('added sensor to %s: %s', robot_name, sensor_info)
@@ -148,11 +148,11 @@ def add_sensors(robot_name, sensor_infos):
 
 def delete_sensor(robot_name, sensor_name):
     db.srem('sensors:%s'%robot_name, sensor_name)
-    db.delete('sensor-socketio:%s:%s'%(robot_name, sensor_name))
+    db.delete('sensor-channel:%s:%s'%(robot_name, sensor_name))
     db.delete('sensor-mediatype:%s:%s'%(robot_name, sensor_name))
 
-def get_sensor_socketio(robot_name, sensor_name):
-    return db.get('sensor-socketio:%s:%s'%(robot_name,sensor_name)).decode('utf-8')
+def get_sensor_channel(robot_name, sensor_name):
+    return db.get('sensor-channel:%s:%s'%(robot_name,sensor_name)).decode('utf-8')
 
 def get_sensor_mediatype(robot_name, sensor_name):
     return db.get('sensor-mediatype:%s:%s'%(robot_name, sensor_name)).decode('utf-8')
@@ -176,13 +176,7 @@ def check_sensor(robot_name, sensor_name):
 # Main web page
 @app.route('/')
 def main():
-    #return "hi"
     return render_template('index.html')
-    #for robot_name in db.smembers('robots'):
-    #    for control_name in db.smembers('controls:%s'%robot_name):
-    #        socketio_name = db['control-socketio:%s:%s'%(robot_name,control_name)]
-    #        socketio.emit(socketio_name, 'forward-%s'%time.time())
-    #return ''
 
 ######### Basic Object REST #########
 
@@ -255,6 +249,8 @@ def rest_get_sensor(robot_name, sensor_name):
 
 @app.route('/robots/<robot_name>/sensors/<sensor_name>', methods=['POST'])
 def rest_post_sensor(robot_name, sensor_name):
+    if not request.is_json:
+        abort(400, 'request must be application/json')
     data = request.get_json()
     if 'sensor_name' not in data:
         data['sensor_name'] = sensor_name
@@ -268,41 +264,6 @@ def rest_delete_sensor(robot_name, sensor_name):
     check_sensor(robot_name,sensor_name)
     delete_sensor(robot_name, sensor_name)
     return 'ok'
-
-############ Content REST methods (supporing ajax) ############
-
-#@app.route('/robots/<robot_name>/controls/<control_name>', methods=['POST'])
-
-########################################################################
-# SocketIO communication (server <--> robots)
-########################################################################
-
-# TODO: make websocket controled (actually, maybe we don't need this anymore)
-#def rest_post_control(robot_name, control_name):
-#    check_robot(robot_name)
-#    check_control(robot_name, control_name)
-#    # TODO: check if this control has an active socket
-#    signal = request.get_data()
-#    app.logger.debug('posting control %s-%s=%s', robot_name, control_name, signal)
-#    control_robot(robot_name, control_name, signal)
-#    return "Success"
-
-#@socketio.on('connect')
-def ws_conn():
-    app.logger.info('connected')
-    #socketio.emit('msg', {'version': __version__})
-
-#@socketio.on('disconnect')
-def ws_disconn():
-    app.logger.info('disconnected')
-    #socketio.emit('msg', {'version': __version__})
-
-#@socketio.on('sensor')
-#def ws_sensor(message):
-#    app.logger.info('got sensor message: %s, len=%s'%(message[0], len(message[1])))
-#    #app.logger.info('%s'%message)
-#    socketio_name, signal = message
-#    socketio.emit(socketio_name, signal)
 
 
 if __name__ == "__main__":

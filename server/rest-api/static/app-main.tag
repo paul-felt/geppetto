@@ -31,14 +31,14 @@
     //
     var wsuri;
     if (document.location.origin == "file://") {
-       wsuri = "ws://127.0.0.1:5555/ws";
+       wsuri = "ws://127.0.0.1:8080/ws";
     } else {
        wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" +
-                   document.location.host + "/ws";
+                   document.location.host + ":8080" + "/ws";
     }
     // the WAMP connection to the Router
     //
-    var socket = new autobahn.Connection({
+    var connection = new autobahn.Connection({
        url: wsuri,
        realm: "realm1"
     });
@@ -56,7 +56,7 @@
       for (control_idx in self.controls){
         var control = self.controls[control_idx]
         var control_name = control['control_name'];
-        var control_socketio = control['control_socketio'];
+        var channel_name = control['channel_name'];
         var control_limits = control['limits'];
         // SLIDER
         var slider=document.getElementById(`slider_${control_name}`);
@@ -79,14 +79,14 @@
 
         var timer;
 
-        // we need to create a closure to keep the right control_socketio in scope for our callback
-        (function(control_socketio){
+        // we need to create a closure to keep the right channel_name in scope for our callback
+        (function(channel_name){
           // slider activate: start a timer going until we release this slider
           slider.noUiSlider.on('start',function(values, handle, unencoded, tap, positions ){		
           currSlider = this;
           timer=setInterval(function(){
                 // publish this control change back to whoever is listening (robot)
-                session.publish(control_socketio, currSlider.get());
+                session.publish(channel_name, [currSlider.get()]);
               }, 20); // the above code is executed every 20 ms
           })
 
@@ -97,10 +97,10 @@
           // single slider set. one and done
           slider.noUiSlider.on('set',function(values, handle, unencoded, tap, positions ){		
             // publish this control change back to whoever is listening (robot)
-            session.publish(control_socketio, values[0]);
+            session.publish(channel_name, [values[0]]);
           })
           //slider.noUiSlider.destroy()
-        })(control_socketio);
+        })(channel_name);
       } // end for controls
 
     } // end build sliders
@@ -108,13 +108,13 @@
     function buildSensorDisplays(session){
       for (sensor_idx in self.sensors){
         var sensor = self.sensors[sensor_idx]
-        var sensor_socketio = sensor['socketio'];
+        var channel_name = sensor['channel_name'];
         var sensor_name = sensor['sensor_name'];
 
         // closure to keep sensor name in scope
-        (function(sensor_name){
+        (function(sensor_name,channel_name){
           // now we're going to subscribe to this sensor's messages
-          session.subscribe(sensor_socketio, function(data){
+          session.subscribe(channel_name, function(data){
             // we got a sensor message
             console.log(`got video for ${sensor_name}: ${data}`);
             var blob = new Blob([data], { type: 'image/jpeg' });
@@ -129,7 +129,7 @@
             }
           );
         // end closure
-        })(sensor_name);
+        })(sensor_name,channel_name);
 
       }
     }
