@@ -22,11 +22,11 @@ class PicamSensor(Sensor):
                 setattr(cam, key, val)
             self.image_gen = cam.capture_continuous(BytesIO(), 'jpeg', resize=self.dims, use_video_port=True)
         #print('getting video')
-        #return bytearray(b'1234567890')
+        #return b'1234567890'
         stream = self.image_gen.next()
         # read out bytes
         stream.seek(0)
-        pic_bytes = bytearray(stream.read())
+        pic_bytes = stream.read()
         # reset stream for next capture
         stream.seek(0) 
         stream.truncate()

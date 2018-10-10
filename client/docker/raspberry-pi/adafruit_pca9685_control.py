@@ -1,5 +1,4 @@
-import geppetto_client
-# Import the PCA9685 module.
+from geppetto_client import Client
 import Adafruit_PCA9685
 
 ## Helper function to make setting a servo pulse width simpler.
@@ -14,7 +13,7 @@ import Adafruit_PCA9685
 #    pulse //= pulse_length
 #    pwm.set_pwm(channel, 0, pulse)
 
-class AdaFruitPCA9685Control(geppetto_client.Control):
+class AdaFruitPCA9685Control(Control):
     def __init__(self, host, port, robot_name, servo_name, channel, pwm_frequency=50, min_limit=200, max_limit=400):
         self.channel = channel
         self.min_limit = min_limit
@@ -29,5 +28,5 @@ class AdaFruitPCA9685Control(geppetto_client.Control):
     def apply_control(self, signal):
         print('%s-%s: applying control %s' % (self.robot_name,self.signal_name, signal))
         assert self.min_limit <= signal and signal <= self.max_limit
-    self.pwm.set_pwm(self.channel, 0, int(signal))
+        self.pwm.set_pwm(self.channel, 0, int(signal))
 

@@ -4,6 +4,7 @@ import time
 import requests
 import asyncio
 import autobahn
+from multiprocessing import Process
 
 logging.getLogger('requests').setLevel(logging.WARNING)
 logging.basicConfig(level=logging.ERROR)
@@ -11,7 +12,7 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 class Signal(object):
-    def __init__(self, robot_name, name, refresh=0.2):
+    def __init__(self, robot_name, name, refresh=0.1):
         self.robot_name = robot_name
         self.name = name
         self.refresh = refresh
@@ -39,7 +40,7 @@ class Sensor(Signal):
             session.publish(self.channel_name, self.get_reading())
             await asyncio.sleep(self.refresh)
 
-class Register(object):
+class Robot(object):
     def __init__(self, host, web_port, wamp_port):
         self.host = host
         self.web_port = web_port
@@ -97,13 +98,16 @@ class Register(object):
         assert resp.status_code == 200, 'control creation request failed: %s'%resp.text
         self.controls.add(control)
 
-    def run(self):
+    def _get_wamp_component(self):
         # define a wamp component with settings matching
         # the vanilla server settings (no special needs here)
-        wamp_component = autobahn.asyncio.component.Component(
+        return autobahn.asyncio.component.Component(
             transports=u"ws://{host}:{port}/ws".format(host=self.host, port=self.wamp_port),
             realm=u"realm1",
         )
+
+    def start_with_asyncio(self):
+        wamp_component = self._get_wamp_component()
 
         # callback controls
         for control in self.controls:
@@ -113,8 +117,19 @@ class Register(object):
         for sensor in self.sensors:
             wamp_component.on_join(sensor.run)
 
-        logger.info('running wamp')
-        print('running wamp')
         autobahn.asyncio.component.run([wamp_component])
 
+    def start_with_multiprocessing(self):
+        def worker(signal):
+            wamp_component = self._get_wamp_component()
+            wamp_component.on_join(signal.run)
+            autobahn.asyncio.component.run([wamp_component])
 
+        # callback controls
+        for control in self.controls:
+            Process(target=worker, args=(control,)).start()
+
+        # callback sensors
+        for sensor in self.sensors:
+            Process(target=worker, args=(sensor,)).start()
+        # since we didn't start these in daemon mode we'll wait until they finish

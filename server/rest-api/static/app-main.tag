@@ -116,7 +116,7 @@
           // now we're going to subscribe to this sensor's messages
           session.subscribe(channel_name, function(data){
             // we got a sensor message
-            console.log(`got video for ${sensor_name}: ${data}`);
+            //console.log(`got video for ${sensor_name}: ${data}`);
             var blob = new Blob([data], { type: 'image/jpeg' });
             var objectUrl = URL.createObjectURL(blob);
             $(`#sensor_${sensor_name}`).attr("src",objectUrl);

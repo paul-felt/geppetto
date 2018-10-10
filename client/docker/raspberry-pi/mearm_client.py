@@ -1,16 +1,32 @@
-import client
+import argparse
+import logging
+import geppetto_client
+from geppetto_client import DummySensor, DummyControl
+from picam_sensor import PicamSensor
+from adafruit_pca9685_control import AdaFruitPCA9685Control
 
-class PWMServo(client.Control):
-    def __init__(self, robot_name, servo_name, gpio_pin):
-        self.gpio_pin = gpio_pin
-        super(PWMServo, self).__init__(robot_name, servo_name)
-    def get_limits(self):
-        return 1000, 2000
-    def apply_control(self, signal):
-        assert 1000 < signal and signal < 2000
-        self.pi.set_servo_pulsewidth(self.gpio_pin, signal)
+logging.getLogger('requests').setLevel(logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
-client.register_control(PWMServo('arm-swiv', 1))
-#client.register_control(PWMServo('arm-horz', 2))
-#client.register_control(PWMServo('arm-vert', 3))
-#client.register_control(PWMServo('arm-claw', 4))
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', default='localhost', help='The host that geppetto is running on')
+    parser.add_argument('--web-port', default=80, type=int, help='The port that the geppetto web server is running on')
+    parser.add_argument('--wamp-port', default=8080, type=int, help='The port that the geppetto wamp server is running on')
+    args = parser.parse_args()
+
+    # Robot is in charge of adding/removing robots from the rest api
+    with Robot(args.host, args.web_port, args.wamp_port) as robot:
+        # Picam sensor
+        robot.add_sensor(PicamSensor(args.host, args.web_port, args.wamp_port, 'marion', 'picam'))
+    	# Mearm controls
+        robot.add_control(AdaFruitPCA9685Control(args.host, args.web_port, args.wamp_port, 'marion', 'twist', 0, min_limit=350, max_limit=450))
+        robot.add_control(AdaFruitPCA9685Control(args.host, args.web_port, args.wamp_port, 'marion', 'height', 1, min_limit=150, max_limit=280))
+        robot.add_control(AdaFruitPCA9685Control(args.host, args.web_port, args.wamp_port, 'marion', 'forward', 2, min_limit=280, max_limit=450))
+        robot.add_control(AdaFruitPCA9685Control(args.host, args.web_port, args.wamp_port, 'marion', 'claw', 3, min_limit=150, max_limit=370))
+        # interleave control/sensor logic with asyncio
+        robot.start_with_asyncio()
+        # run each control/sensor in its own process
+        #robot.start_with_multiprocessing()
+
