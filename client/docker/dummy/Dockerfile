@@ -12,4 +12,4 @@ WORKDIR /code
 COPY ./geppetto_client.py /code/
 
 # TODO: discover the geppetto server
-CMD python3 client.py --host plfelt-mbp.local --web-port=80 --wamp-port=8080
+CMD python3 client.py --host plfelt-mbp.local --web-port=8080 --wamp-port=5555

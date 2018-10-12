@@ -10,7 +10,7 @@ services:
     container_name: gp_web 
     build: './docker/flask'
     ports:
-     - "80:80"
+     - "8080:80"
     volumes:
      - ./rest-api:/app
     environment:
@@ -47,7 +47,7 @@ services:
     container_name: gp_wamp
     image: "crossbario/crossbar"
     ports:
-     - "8080:8080"
+     - "5555:8080"
     logging:
       driver: json-file
       options:
