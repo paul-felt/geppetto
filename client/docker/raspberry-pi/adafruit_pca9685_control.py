@@ -1,4 +1,4 @@
-from geppetto_client import Client
+from geppetto_client import Control
 import Adafruit_PCA9685
 
 ## Helper function to make setting a servo pulse width simpler.
@@ -14,7 +14,7 @@ import Adafruit_PCA9685
 #    pwm.set_pwm(channel, 0, pulse)
 
 class AdaFruitPCA9685Control(Control):
-    def __init__(self, host, port, robot_name, servo_name, channel, pwm_frequency=50, min_limit=200, max_limit=400):
+    def __init__(self, robot_name, servo_name, channel, pwm_frequency=50, min_limit=200, max_limit=400):
         self.channel = channel
         self.min_limit = min_limit
         self.max_limit = max_limit
@@ -22,11 +22,12 @@ class AdaFruitPCA9685Control(Control):
         self.pwm = Adafruit_PCA9685.PCA9685()
         # Set frequency 
         self.pwm.set_pwm_freq(pwm_frequency)
-        super(AdaFruitPCA9685Control, self).__init__(host, port, robot_name, servo_name)
+        super(AdaFruitPCA9685Control, self).__init__(robot_name, servo_name)
     def get_limits(self):
         return self.min_limit, self.max_limit
     def apply_control(self, signal):
-        print('%s-%s: applying control %s' % (self.robot_name,self.signal_name, signal))
-        assert self.min_limit <= signal and signal <= self.max_limit
-        self.pwm.set_pwm(self.channel, 0, int(signal))
+        #print('%s-%s: applying control %s' % (self.robot_name, self.name, signal))
+        signal = int(float(signal))
+        assert self.min_limit <= signal and signal <= self.max_limit, 'signal=%s out of range[%s,%s]' % (signal,self.min_limit,self.max_limit)
+        self.pwm.set_pwm(self.channel, 0, signal)
 

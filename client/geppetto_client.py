@@ -3,11 +3,11 @@ import logging
 import time
 import requests
 import asyncio
-import autobahn
+from autobahn.asyncio import component as autobahn_utils
 from multiprocessing import Process
 
 logging.getLogger('requests').setLevel(logging.WARNING)
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -76,32 +76,40 @@ class Robot(object):
         ' Delete from the rest api all sensors and controls in this register '
         for sensor in self.sensors:
             url = self.sensor_url(sensor.robot_name, sensor.name)
+            logger.info('DELETE sensor: %s to %s', sensor.channel_name, url)
             resp = requests.delete(url)
+            logger.info('response: %s', resp.status_code)
             assert resp.status_code == 200, 'sensor deletion request failed: %s'%resp.text
         for control in self.controls:
             url = self.control_url(control.robot_name, control.name)
+            logger.info('DELETE control: %s to %s', control.channel_name, url)
             resp = requests.delete(url)
+            logger.info('response: %s', resp.status_code)
             assert resp.status_code == 200, 'control deletion request failed: %s'%resp.text
         # TODO: delete robot itself if necessary
 
     def add_sensor(self, sensor):
         url = self.sensor_url(sensor.robot_name, sensor.name)
+        logger.info('POST sensor: %s to %s', sensor.channel_name, url)
         resp = requests.post(url, json = {'channel_name':sensor.channel_name,
                                     'mediatype':sensor.get_mediatype()})
+        logger.info('response: %s', resp.status_code)
         assert resp.status_code == 200, 'sensor creation request failed: %s'%resp.text
         self.sensors.add(sensor)
 
     def add_control(self, control):
         url = self.control_url(control.robot_name, control.name)
+        logger.info('POST control: %s to %s', control.channel_name, url)
         resp = requests.post(url, json = {'channel_name':control.channel_name,
                                     'limits':control.get_limits()})
         assert resp.status_code == 200, 'control creation request failed: %s'%resp.text
+        logger.info('response: %s', resp.status_code)
         self.controls.add(control)
 
     def _get_wamp_component(self):
         # define a wamp component with settings matching
         # the vanilla server settings (no special needs here)
-        return autobahn.asyncio.component.Component(
+        return autobahn_utils.Component(
             transports=u"ws://{host}:{port}/ws".format(host=self.host, port=self.wamp_port),
             realm=u"realm1",
         )
@@ -117,19 +125,28 @@ class Robot(object):
         for sensor in self.sensors:
             wamp_component.on_join(sensor.run)
 
-        autobahn.asyncio.component.run([wamp_component])
+        autobahn_utils.run([wamp_component])
 
     def start_with_multiprocessing(self):
         def worker(signal):
             wamp_component = self._get_wamp_component()
             wamp_component.on_join(signal.run)
-            autobahn.asyncio.component.run([wamp_component])
+            autobahn_utils.run([wamp_component])
 
+        processes = []
         # callback controls
         for control in self.controls:
-            Process(target=worker, args=(control,)).start()
+            processes.append(Process(target=worker, args=(control,)))
 
         # callback sensors
         for sensor in self.sensors:
-            Process(target=worker, args=(sensor,)).start()
-        # since we didn't start these in daemon mode we'll wait until they finish
+            processes.append(Process(target=worker, args=(sensor,)))
+
+        # run worker processes 
+        for process in processes:
+            process.start()
+
+        # wait for them to terminate
+        for process in processes:
+            process.join()
+        
