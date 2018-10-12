@@ -31,10 +31,10 @@
     //
     var wsuri;
     if (document.location.origin == "file://") {
-       wsuri = "ws://127.0.0.1:8080/ws";
+       wsuri = "ws://127.0.0.1:5555/ws";
     } else {
        wsuri = (document.location.protocol === "http:" ? "ws:" : "wss:") + "//" +
-                   document.location.host + ":8080" + "/ws";
+                   document.location.hostname + ":5555" + "/ws";
     }
     // the WAMP connection to the Router
     //
@@ -105,6 +105,29 @@
 
     } // end build sliders
 
+    // utility function to interpret base64-encoded binary sensor data
+    // (see https://stackoverflow.com/questions/16245767/creating-a-blob-from-a-base64-string-in-javascript)
+    function base64toBlob(base64Data, contentType) {
+      contentType = contentType || '';
+      var sliceSize = 1024;
+      var byteCharacters = atob(base64Data);
+      var bytesLength = byteCharacters.length;
+      var slicesCount = Math.ceil(bytesLength / sliceSize);
+      var byteArrays = new Array(slicesCount);
+
+      for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+          var begin = sliceIndex * sliceSize;
+          var end = Math.min(begin + sliceSize, bytesLength);
+
+          var bytes = new Array(end - begin);
+          for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+              bytes[i] = byteCharacters[offset].charCodeAt(0);
+          }
+          byteArrays[sliceIndex] = new Uint8Array(bytes);
+      }
+      return new Blob(byteArrays, { type: contentType });
+    }
+
     function buildSensorDisplays(session){
       for (sensor_idx in self.sensors){
         var sensor = self.sensors[sensor_idx]
@@ -114,12 +137,25 @@
         // closure to keep sensor name in scope
         (function(sensor_name,channel_name){
           // now we're going to subscribe to this sensor's messages
-          session.subscribe(channel_name, function(data){
-            // we got a sensor message
-            //console.log(`got video for ${sensor_name}: ${data}`);
-            var blob = new Blob([data], { type: 'image/jpeg' });
-            var objectUrl = URL.createObjectURL(blob);
-            $(`#sensor_${sensor_name}`).attr("src",objectUrl);
+          session.subscribe(channel_name, function(data_arr){
+            try{ // autobahn swallows errors, so catch them ourselves
+              // we got a sensor message
+              //console.log(`got video for ${sensor_name}: ${data}`);
+              data = data_arr[0] // autobahn always passes an array
+              // WAMP protocol specifies that if the first bytes is \0
+              // then the payload should be interpreted as base64. In the 
+              // future autobahn should do this for us, but not yet:
+              // see: https://github.com/crossbario/autobahn-js/issues/189
+              if (data[0] === '\0'){
+                data = data.substring(1);
+              }
+              blob = base64toBlob(data, 'image/jpeg');
+              var objectUrl = URL.createObjectURL(blob);
+              $(`#sensor_${sensor_name}`).attr("src",objectUrl);
+            }
+            catch(err){
+              console.error('failed to parse sensor data: ',err);
+            }
           }).then(
             function (sub){
               console.log('we successfully subscribed to sensor stream', sub);
@@ -223,6 +259,10 @@
     }
     .noUi-active .noUi-tooltip {
         display: block;
+    }
+
+    img {
+      height: 300px;
     }
 
   </style>

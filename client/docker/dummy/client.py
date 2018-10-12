@@ -4,6 +4,7 @@ import time
 import requests
 import asyncio
 import sys
+import base64
 
 from autobahn.asyncio.component import Component, run
 from geppetto_client import Control, Sensor, Robot
@@ -18,9 +19,6 @@ class DummySensor(Sensor):
         if not hasattr(self,'bytes'):
             self.bytes = bytes(open('./mountain.jpg','rb').read())
         return self.bytes
-        #return time.time()
-        #return bytearray(b'asdf') # doesn't work
-        #return b'asdf'
 
 class DummyControl(Control):
     def get_limits(self):
@@ -33,8 +31,8 @@ class DummyControl(Control):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', default='localhost', help='The host that geppetto is running on')
-    parser.add_argument('--web-port', default=80, type=int, help='The port that the geppetto web server is running on')
-    parser.add_argument('--wamp-port', default=8080, type=int, help='The port that the geppetto wamp server is running on')
+    parser.add_argument('--web-port', default=8080, type=int, help='The port that the geppetto web server is running on')
+    parser.add_argument('--wamp-port', default=5555, type=int, help='The port that the geppetto wamp server is running on')
     args = parser.parse_args()
 
     # Robot is in charge of adding/removing robots from the rest api
@@ -49,7 +47,7 @@ if __name__ == '__main__':
         robot.add_sensor (DummySensor ('mock-robot2','sensor2'))
         robot.add_control(DummyControl('mock-robot2','control1'))
         robot.add_control(DummyControl('mock-robot2','control2'))
-        # interleave control/sensor logic with asyncio
+        ## interleave control/sensor logic with asyncio
         robot.start_with_asyncio()
         # run each control/sensor in its own process
         #robot.start_with_multiprocessing()
