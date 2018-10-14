@@ -23,8 +23,8 @@ class DummySensor(Sensor):
 class DummyControl(Control):
     def get_limits(self):
         return 0,180
-    def apply_control(self,signal):
-        print('applying control: %s: %s'%(self.channel_name, signal))
+    def apply_control(self, control_info):
+        print('applying control: %s: %s'%(self.channel_name, control_info))
         sys.stdout.flush()
 
 

@@ -8,11 +8,11 @@ services:
   #
   web:
     container_name: gp_web 
-    build: './docker/flask'
+    build: './docker/web'
     ports:
      - "8080:80"
     volumes:
-     - ./rest-api:/app
+     - ./web-data:/app
     environment:
       - FLASK_APP=main.py
       - FLASK_DEBUG=1
@@ -48,6 +48,21 @@ services:
     image: "crossbario/crossbar"
     ports:
      - "5555:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "100K"
+        max-file: "10"
+
+  # The brain: listens to sensors/controls on the wamp server 
+  # and learns to automate behaviors. 
+  brain:
+    container_name: gp_brain
+    build: './docker/brain'
+    ports:
+     - "8888:8888"
+    volumes:
+     - ./brain-notebooks:/notebooks
     logging:
       driver: json-file
       options:

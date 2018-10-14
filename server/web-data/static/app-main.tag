@@ -80,13 +80,20 @@
         var timer;
 
         // we need to create a closure to keep the right channel_name in scope for our callback
-        (function(channel_name){
+        (function(channel_name, control_name){
           // slider activate: start a timer going until we release this slider
           slider.noUiSlider.on('start',function(values, handle, unencoded, tap, positions ){		
           currSlider = this;
           timer=setInterval(function(){
                 // publish this control change back to whoever is listening (robot)
-                session.publish(channel_name, [currSlider.get()]);
+                var message = {
+                  value : currSlider.get(),
+                  robot_name : self.robot_name,
+                  name : control_name,
+                  signal_type : 'control',
+                  ts : new Date().getTime(),
+                }
+                session.publish(channel_name, [message]);
               }, 20); // the above code is executed every 20 ms
           })
 
@@ -97,10 +104,17 @@
           // single slider set. one and done
           slider.noUiSlider.on('set',function(values, handle, unencoded, tap, positions ){		
             // publish this control change back to whoever is listening (robot)
-            session.publish(channel_name, [values[0]]);
+            var message = {
+              value : values[0],
+              robot_name : self.robot_name,
+              name : control_name,
+              signal_type : 'control',
+              ts : new Date().getTime(),
+            }
+            session.publish(channel_name, [message]);
           })
           //slider.noUiSlider.destroy()
-        })(channel_name);
+        })(channel_name, control_name);
       } // end for controls
 
     } // end build sliders
@@ -141,7 +155,7 @@
             try{ // autobahn swallows errors, so catch them ourselves
               // we got a sensor message
               //console.log(`got video for ${sensor_name}: ${data}`);
-              data = data_arr[0] // autobahn always passes an array
+              data = data_arr[0] // autobahn-js always passes an array
               // WAMP protocol specifies that if the first bytes is \0
               // then the payload should be interpreted as base64. In the 
               // future autobahn should do this for us, but not yet:
@@ -181,6 +195,7 @@
       self.update({
         title:  robot_name,
         description:  "Loading...",
+        robot_name: robot_name,
         controls: [],
         sensors: [],
       });
