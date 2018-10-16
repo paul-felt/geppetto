@@ -21,10 +21,21 @@ class Signal(object):
         return self.channel_name
 
 class Control(Signal):
-    def apply_control(self,signal):
-        raise NotImplementedError()
     def get_limits(self):
         raise NotImplementedError()
+    def apply_control_value(self,control_value):
+        raise NotImplementedError()
+    def apply_control(self,control_info):
+        # get the control value
+        control_value = int(float(control_info['value']))
+        # make sure it's within limits
+        min_limit, max_limit = self.get_limits()
+        if not (min_limit <= control_value and control_value <= max_limit):
+            logger.warn('control_value=%s out of range[%s,%s]. Truncating', control_value,self.min_limit,self.max_limit)
+            control_value = min(max_limit, control_value)
+            control_value = max(min_limit, control_value)
+        # pass it on
+        self.apply_control_value(control_value)
     async def run(self, session, details):
         logger.info('subscribing to control: %s',self.channel_name)
         session.subscribe(self.apply_control, self.channel_name)

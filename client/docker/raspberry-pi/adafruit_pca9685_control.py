@@ -25,9 +25,7 @@ class AdaFruitPCA9685Control(Control):
         super(AdaFruitPCA9685Control, self).__init__(robot_name, servo_name)
     def get_limits(self):
         return self.min_limit, self.max_limit
-    def apply_control(self, signal):
-        #print('%s-%s: applying control %s' % (self.robot_name, self.name, signal))
-        signal = int(float(signal))
-        assert self.min_limit <= signal and signal <= self.max_limit, 'signal=%s out of range[%s,%s]' % (signal,self.min_limit,self.max_limit)
-        self.pwm.set_pwm(self.channel, 0, signal)
+    def apply_control_value(self, control_value):
+        #print('%s-%s: applying control %s' % (self.robot_name, self.name, control_value))
+        self.pwm.set_pwm(self.channel, 0, control_value)
 
