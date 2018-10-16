@@ -151,11 +151,11 @@
         // closure to keep sensor name in scope
         (function(sensor_name,channel_name){
           // now we're going to subscribe to this sensor's messages
-          session.subscribe(channel_name, function(data_arr){
+          session.subscribe(channel_name, function(args, kwargs, details){
             try{ // autobahn swallows errors, so catch them ourselves
               // we got a sensor message
               //console.log(`got video for ${sensor_name}: ${data}`);
-              data = data_arr.value 
+              data = kwargs.value 
               // WAMP protocol specifies that if the first bytes is \0
               // then the payload should be interpreted as base64. In the 
               // future autobahn should do this for us, but not yet:
