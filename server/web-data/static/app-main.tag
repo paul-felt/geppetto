@@ -155,7 +155,7 @@
             try{ // autobahn swallows errors, so catch them ourselves
               // we got a sensor message
               //console.log(`got video for ${sensor_name}: ${data}`);
-              data = data_arr[0] // autobahn-js always passes an array
+              data = data_arr.value 
               // WAMP protocol specifies that if the first bytes is \0
               // then the payload should be interpreted as base64. In the 
               // future autobahn should do this for us, but not yet:
