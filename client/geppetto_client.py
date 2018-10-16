@@ -37,7 +37,7 @@ class Sensor(Signal):
     async def run(self, session, details):
         logger.info('publishing to sensor: %s',self.channel_name)
         while True:
-            session.publish(self.channel_name, self.get_reading(), robot_name=self.robot_name, name=self.name, signal_type='sensor', mediatype='self.mediatype', ts=time.time())
+            session.publish(self.channel_name, value=self.get_reading(), robot_name=self.robot_name, name=self.name, signal_type='sensor', mediatype=self.mediatype, ts=time.time())
             await asyncio.sleep(self.refresh)
 
 class Robot(object):
