@@ -12,7 +12,7 @@ services:
     ports:
      - "8080:80"
     volumes:
-     - ./web-data:/app
+     - ./volumes/web_src:/app
     environment:
       - FLASK_APP=main.py
       - FLASK_DEBUG=1
@@ -34,7 +34,7 @@ services:
     container_name: gp_redis
     image: "redis"
     volumes:
-     - ./redis-data:/data
+     - ./volumes/redis:/data
     logging:
       driver: json-file
       options:
@@ -54,15 +54,31 @@ services:
         max-size: "100K"
         max-file: "10"
 
-  # The brain: listens to sensors/controls on the wamp server 
-  # and learns to automate behaviors. 
+  # Brain: robot processing loops that train and execute robot behaviors
   brain:
     container_name: gp_brain
+    build: './docker/brain'
+    volumes:
+     - ./volumes/brain_src:/code
+     - ./volumes/episodes:/episodes
+    working_dir: /code
+    #command: ["python3", "main.py"]
+    command: ["sleep", "999999"] # for debug
+    logging:
+      driver: json-file
+      options:
+        max-size: "100K"
+        max-file: "10"
+
+  # Brain notebooks: jupyter notebooks to prototype/visualize models
+  jupyter:
+    container_name: gp_jupyter
     build: './docker/brain'
     ports:
      - "8888:8888"
     volumes:
-     - ./brain-notebooks:/notebooks
+     - ./volumes/notebooks:/notebooks
+     - ./volumes/brain_src/brain:/notebooks/brain
     logging:
       driver: json-file
       options:

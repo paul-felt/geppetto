@@ -12,15 +12,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class Signal(object):
-    def __init__(self, robot_name, name, refresh=0.1):
+    def __init__(self, robot_name, name):
         self.robot_name = robot_name
         self.name = name
-        self.refresh = refresh
-        self.channel_name = '{}.{}'.format(self.robot_name, self.name)
     def __repr__(self):
         return self.channel_name
 
 class Control(Signal):
+    def __init__(self, robot_name, name):
+        super().__init__(robot_name, name)
+        self.channel_name = 'gp.robots.{}.controls.{}'.format(robot_name, name)
     def get_limits(self):
         raise NotImplementedError()
     def apply_control_value(self,control_value):
@@ -41,6 +42,12 @@ class Control(Signal):
         session.subscribe(self.apply_control, self.channel_name)
 
 class Sensor(Signal):
+    def __init__(self, robot_name, name, refresh=0.1):
+        super().__init__(robot_name, name)
+        self.refresh = refresh
+        self.channel_name = 'gp.robots.{}.sensors.{}'.format(robot_name, name)
+    def get_source(self):
+        return 'robot'
     def get_reading(self):
         raise NotImplementedError()
     def get_mediatype(self):
@@ -48,7 +55,7 @@ class Sensor(Signal):
     async def run(self, session, details):
         logger.info('publishing to sensor: %s',self.channel_name)
         while True:
-            session.publish(self.channel_name, value=self.get_reading(), robot_name=self.robot_name, name=self.name, signal_type='sensor', mediatype=self.mediatype, ts=time.time())
+            session.publish(self.channel_name, value=self.get_reading(), robot_name=self.robot_name, name=self.name, source=self.get_source(), signal_type='sensor', mediatype=self.get_mediatype(), ts=time.time())
             await asyncio.sleep(self.refresh)
 
 class Robot(object):

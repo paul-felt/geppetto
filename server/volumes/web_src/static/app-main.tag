@@ -90,7 +90,8 @@
                   value : currSlider.get(),
                   robot_name : self.robot_name,
                   name : control_name,
-                  signal_type : 'control',
+                  type : 'control',
+                  source : 'web',
                   ts : new Date().getTime(),
                 }
                 session.publish(channel_name, [message]);
@@ -108,7 +109,8 @@
               value : values[0],
               robot_name : self.robot_name,
               name : control_name,
-              signal_type : 'control',
+              type : 'control',
+              source : 'web',
               ts : new Date().getTime(),
             }
             session.publish(channel_name, [message]);

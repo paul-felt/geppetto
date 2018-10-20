@@ -1,0 +1,10 @@
+SIGNAL_TS = 'ts'
+SIGNAL_TYPE = 'type'
+SIGNAL_TYPE_SENSOR = 'sensor'
+SIGNAL_TYPE_CONTROL = 'control'
+SIGNAL_NAME = 'name'
+SIGNAL_ROBOT_NAME = 'robot_name'
+SIGNAL_VALUE = 'value'
+SIGNAL_SOURCE = 'source'
+SIGNAL_SOURCE_WEB = 'web'
+EPISODE_TIMEOUT = 60
