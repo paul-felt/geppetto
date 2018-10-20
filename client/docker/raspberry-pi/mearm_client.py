@@ -21,7 +21,7 @@ if __name__ == '__main__':
         # Picam sensor
         robot.add_sensor(PicamSensor('marion', 'picam'))
     	### Mearm controls
-        robot.add_control(AdaFruitPCA9685Control('marion', 'twist', 0, min_limit=100, max_limit=500))
+        robot.add_control(AdaFruitPCA9685Control('marion', 'twist', 0, min_limit=120, max_limit=420))
         robot.add_control(AdaFruitPCA9685Control('marion', 'height', 1, min_limit=150, max_limit=280))
         robot.add_control(AdaFruitPCA9685Control('marion', 'forward', 2, min_limit=280, max_limit=450))
         robot.add_control(AdaFruitPCA9685Control('marion', 'claw', 3, min_limit=150, max_limit=370))

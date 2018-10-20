@@ -3,8 +3,12 @@ import logging
 import time
 import requests
 import asyncio
-from autobahn.asyncio import component as autobahn_utils
+import signal
+import os
+import sys
 from multiprocessing import Process
+
+from autobahn.asyncio import component as autobahn_utils
 
 logging.getLogger('requests').setLevel(logging.WARNING)
 logging.basicConfig(level=logging.INFO)
@@ -15,18 +19,25 @@ class Signal(object):
     def __init__(self, robot_name, name):
         self.robot_name = robot_name
         self.name = name
+    def get_channel_name(self):
+        raise NotImplementedError()
     def __repr__(self):
-        return self.channel_name
+        return self.get_channel_name()
+    def cleanup(self):
+        'override this if you need to clean up system resources before exit'
+        pass 
 
 class Control(Signal):
     def __init__(self, robot_name, name):
         super().__init__(robot_name, name)
-        self.channel_name = 'gp.robots.{}.controls.{}'.format(robot_name, name)
+        self.channel_name = self.get_channel_name()
+    def get_channel_name(self):
+        return 'gp.robots.{}.controls.{}'.format(self.robot_name, self.name)
     def get_limits(self):
         raise NotImplementedError()
     def apply_control_value(self,control_value):
         raise NotImplementedError()
-    def apply_control(self,control_info):
+    def apply_control(self,*args,**control_info):
         # get the control value
         control_value = int(float(control_info['value']))
         # make sure it's within limits
@@ -37,26 +48,38 @@ class Control(Signal):
             control_value = max(min_limit, control_value)
         # pass it on
         self.apply_control_value(control_value)
-    async def run(self, session, details):
+    async def on_join(self, session, details):
         logger.info('subscribing to control: %s',self.channel_name)
-        session.subscribe(self.apply_control, self.channel_name)
+        self.subscription = await session.subscribe(self.apply_control, self.channel_name)
+    async def on_leave(self, session, details):
+        logger.info('unsubscribing to control: %s',self.channel_name)
+        if hasattr(self, 'subscription'):
+            await self.subscription.unsubscribe()
+
 
 class Sensor(Signal):
     def __init__(self, robot_name, name, refresh=0.1):
         super().__init__(robot_name, name)
         self.refresh = refresh
-        self.channel_name = 'gp.robots.{}.sensors.{}'.format(robot_name, name)
+        self.channel_name = self.get_channel_name()
+    def get_channel_name(self):
+        return 'gp.robots.{}.sensors.{}'.format(self.robot_name, self.name)
     def get_source(self):
         return 'robot'
     def get_reading(self):
         raise NotImplementedError()
     def get_mediatype(self):
         raise NotImplementedError()
-    async def run(self, session, details):
+    async def on_join(self, session, details):
         logger.info('publishing to sensor: %s',self.channel_name)
-        while True:
+        self.publishing = True
+        while self.publishing:
             session.publish(self.channel_name, value=self.get_reading(), robot_name=self.robot_name, name=self.name, source=self.get_source(), signal_type='sensor', mediatype=self.get_mediatype(), ts=time.time())
             await asyncio.sleep(self.refresh)
+    async def on_leave(self, session, details):
+        logger.info('ceased publishing to sensor: %s',self.channel_name)
+        self.publishing = False
+        self.cleanup()
 
 class Robot(object):
     def __init__(self, host, web_port, wamp_port):
@@ -98,12 +121,16 @@ class Robot(object):
             resp = requests.delete(url)
             logger.info('response: %s', resp.status_code)
             assert resp.status_code == 200, 'sensor deletion request failed: %s'%resp.text
+            # Note: we can't call sensor.stop() here because we might be 
+            # in a different (parent) process from the actual sensor hardware
         for control in self.controls:
             url = self.control_url(control.robot_name, control.name)
             logger.info('DELETE control: %s to %s', control.channel_name, url)
             resp = requests.delete(url)
             logger.info('response: %s', resp.status_code)
             assert resp.status_code == 200, 'control deletion request failed: %s'%resp.text
+            # Note: we can't call control.stop() here because we might be 
+            # in a different (parent) process from the actual wamp session 
         # TODO: delete robot itself if necessary
 
     def add_sensor(self, sensor):
@@ -137,18 +164,27 @@ class Robot(object):
 
         # callback controls
         for control in self.controls:
-            wamp_component.on_join(control.run)
+            wamp_component.on_join(control.on_join)
+            wamp_component.on_leave(control.on_leave)
 
         # callback sensors
         for sensor in self.sensors:
-            wamp_component.on_join(sensor.run)
+            wamp_component.on_join(sensor.on_join)
+            wamp_component.on_leave(sensor.on_leave)
 
         autobahn_utils.run([wamp_component])
 
     def start_with_multiprocessing(self):
-        def worker(signal):
+        def worker(robot_signal):
+            # now create a wamp connection and run the signal (sensor/control)
             wamp_component = self._get_wamp_component()
-            wamp_component.on_join(signal.run)
+            wamp_component.on_join(robot_signal.on_join)
+            wamp_component.on_leave(robot_signal.on_leave)
+            # first register to handle SIGINT so we can shutdown cleanly
+            def on_sigint(sig, frame):
+                # this calls on_leave, which calls sensor.cleanup()
+                wamp_component.stop()
+            signal.signal(signal.SIGUSR1, on_sigint)
             autobahn_utils.run([wamp_component])
 
         processes = []
@@ -163,6 +199,13 @@ class Robot(object):
         # run worker processes 
         for process in processes:
             process.start()
+
+        # communicate any sigint that happens into the subprocesses
+        # so they can release any hardware and shutdown cleanly
+        def on_sigint(sig, frame):
+            for process in processes:
+                os.kill(process.pid, signal.SIGUSR1)
+        signal.signal(signal.SIGINT, on_sigint)
 
         # wait for them to terminate
         for process in processes:
