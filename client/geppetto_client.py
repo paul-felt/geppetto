@@ -74,7 +74,7 @@ class Sensor(Signal):
         logger.info('publishing to sensor: %s',self.channel_name)
         self.publishing = True
         while self.publishing:
-            session.publish(self.channel_name, value=self.get_reading(), robot_name=self.robot_name, name=self.name, source=self.get_source(), signal_type='sensor', mediatype=self.get_mediatype(), ts=time.time())
+            session.publish(self.channel_name, value=self.get_reading(), robot_name=self.robot_name, name=self.name, source=self.get_source(), signal_type='sensor', mediatype=self.get_mediatype(), ts=int(time.time()*1000))
             await asyncio.sleep(self.refresh)
     async def on_leave(self, session, details):
         logger.info('ceased publishing to sensor: %s',self.channel_name)
