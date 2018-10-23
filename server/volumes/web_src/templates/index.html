@@ -36,9 +36,11 @@
     var self = this;
 
     // only mount things AFTER getting robots from service
-    $.get( "robots", function(robots){
+    $.get("robots", function(robots){
       riot.compile(function() {
         riot.mount('*', robots)
+        //riot.mount('app-navi', robots)
+        //riot.mount('app-main', robots)
         route.start(true)
       })
     })

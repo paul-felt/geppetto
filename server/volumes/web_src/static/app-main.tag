@@ -1,3 +1,4 @@
+
 <app-main>
 
   <article>
@@ -7,6 +8,7 @@
   </article>
 
   <robot-detail>
+
     <!-- Sensors -->
     <h3>Sensors</h3>
     <ul>
@@ -16,13 +18,25 @@
         <audio if={mediatype==="mp3"} id="sensor_{sensor_name}"></audio>
       </li>
     </ul>
+
+    <!-- Episode switch -->
+    <h3>Episode Recording</h3>
+    <!-- widget/styling from https://proto.io/freebies/onoff/ -->
+    <div class="onoffswitch">
+        <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="episode-recorder">
+        <label class="onoffswitch-label" for="episode-recorder">
+            <span class="onoffswitch-inner"></span>
+            <span class="onoffswitch-switch"></span>
+        </label>
+    </div>
+
     <!-- Controls -->
     <h3>Controls</h3>
-    <ul>
     <div each={ controls }>
       <p> { control_name } </p>
       <div id="slider_{control_name}"></div>
     </div>
+
   </robot-detail>
 
 
@@ -51,6 +65,23 @@
     r('',        home       )
     r('*',   robot_page      )
     r(           home       ) // `notfound` would be nicer!
+
+    function buildEpisodeToggle(session){
+      $('#episode-recorder').change(function(){
+        checked = $('#episode-recorder').is(':checked');
+        // publish this control change back to whoever is listening (robot)
+        console.log('check',checked)
+        var message = {
+          value : checked ? 'begin' : 'end',
+          robot_name : self.robot_name,
+          name : 'episode',
+          type : 'episode',
+          source : 'web',
+          ts : new Date().getTime(),
+        }
+        session.publish(`gp.robots.${self.robot_name}.episodes`, null, message);
+      });
+    };
 
     function buildControlSliders(session){
       for (control_idx in self.controls){
@@ -94,7 +125,7 @@
                   source : 'web',
                   ts : new Date().getTime(),
                 }
-                session.publish(channel_name, [message]);
+                session.publish(channel_name, null, message);
               }, 20); // the above code is executed every 20 ms
           })
 
@@ -113,7 +144,7 @@
               source : 'web',
               ts : new Date().getTime(),
             }
-            session.publish(channel_name, [message]);
+            session.publish(channel_name, null, message);
           })
           //slider.noUiSlider.destroy()
         })(channel_name, control_name);
@@ -208,6 +239,7 @@
         connection.onopen = function(session, details){
           console.log('connection to WAMP server opened');
           buildControlSliders(session);
+          buildEpisodeToggle(session);
           buildSensorDisplays(session);
         };
         // connection failed/closed
@@ -239,28 +271,9 @@
       display: inline-block;
       margin: 5px;
     }
-    a {
-      display: block;
-      background: #f7f7f7;
-      text-decoration: none;
-      width: 150px;
-      height: 150px;
-      line-height: 150px;
-      color: inherit;
-    }
-    a:hover {
-      background: #eee;
-      color: #000;
-    }
-    @media (min-width: 480px) {
-      :scope {
-        margin-right: 200px;
-        margin-bottom: 0;
-      }
-    }
 
     #slider{
-      //height:500px;
+      /*height:500px;*/
     }
     #slider > .noUi-base {
       background: #c0392b;  
@@ -280,6 +293,54 @@
 
     img {
       height: 300px;
+    }
+
+    /* Toggle slider styling */
+    .onoffswitch {
+        display: inline-block; 
+        position: relative; width: 200px;
+        -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+    }
+    .onoffswitch-checkbox {
+        display: none;
+    }
+    .onoffswitch-label {
+        display: block; overflow: hidden; cursor: pointer;
+        border: 2px solid #999999; border-radius: 20px;
+    }
+    .onoffswitch-inner {
+        display: block; width: 200%; margin-left: -100%;
+        transition: margin 0.3s ease-in 0s;
+    }
+    .onoffswitch-inner:before, .onoffswitch-inner:after {
+        display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+        font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+        box-sizing: border-box;
+    }
+    .onoffswitch-inner:before {
+        content: "Recording";
+        padding-left: 10px;
+        background-color: #71D13D; color: #FFFFFF;
+    }
+    .onoffswitch-inner:after {
+        content: "Off";
+        padding-right: 10px;
+        background-color: #EEEEEE; color: #999999;
+        text-align: right;
+    }
+    .onoffswitch-switch {
+        display: block; width: 22px; margin: 4px;
+        background: #FFFFFF;
+        position: absolute; top: 0; bottom: 0;
+        right: 166px;
+        border: 2px solid #999999; border-radius: 20px;
+        transition: all 0.3s ease-in 0s; 
+    }
+    .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+        margin-left: 0;
+    }
+    .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+        right: 0px; 
     }
 
   </style>
