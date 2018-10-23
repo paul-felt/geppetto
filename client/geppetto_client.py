@@ -181,10 +181,10 @@ class Robot(object):
             wamp_component.on_join(robot_signal.on_join)
             wamp_component.on_leave(robot_signal.on_leave)
             # first register to handle SIGINT so we can shutdown cleanly
-            def on_sigint(sig, frame):
+            def on_shutdown(sig, frame):
                 # this calls on_leave, which calls sensor.cleanup()
                 wamp_component.stop()
-            signal.signal(signal.SIGUSR1, on_sigint)
+            signal.signal(signal.SIGUSR1, on_shutdown)
             autobahn_utils.run([wamp_component])
 
         processes = []
@@ -200,12 +200,16 @@ class Robot(object):
         for process in processes:
             process.start()
 
-        # communicate any sigint that happens into the subprocesses
+        # relay any shutdown (sigint) request into the subprocesses
         # so they can release any hardware and shutdown cleanly
-        def on_sigint(sig, frame):
+        # Note: we'll relay as a SIGUSR1 signal, since SIGINT and 
+        # SIGTERM have special meaning and handling and tend to cause
+        # all manner of problems.
+        def on_shutdown_master(sig, frame):
             for process in processes:
                 os.kill(process.pid, signal.SIGUSR1)
-        signal.signal(signal.SIGINT, on_sigint)
+        signal.signal(signal.SIGINT, on_shutdown_master)
+        signal.signal(signal.SIGTERM, on_shutdown_master)
 
         # wait for them to terminate
         for process in processes:
