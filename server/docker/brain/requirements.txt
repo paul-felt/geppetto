@@ -1,4 +1,4 @@
-autobahn[asyncio]==18.9.2
-#autobahn[twisted]==18.9.2
+autobahn[asyncio]==18.10.1
+#autobahn[twisted]==18.10.1
 keras==2.2.4
 redis==2.10.3 

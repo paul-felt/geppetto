@@ -7,3 +7,4 @@ COPY ./requirements.txt /
 # pip 
 RUN pip3 install -r /requirements.txt
 
+# CMD defaults to firing up jupyter

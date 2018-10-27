@@ -52,6 +52,7 @@ def save_episode(robot_name, curr_episode, episode_dir, max_duration=constants.M
     # save /episodes/<robot_name>/<date>
     episode_name = datetime.datetime.now().strftime('%Y-%m-%d_%H.%M.%S')
     episode_file = os.path.join(robot_dir,episode_name)
+    # convert any binary values to base64 strings
     def encode_val(val):
         if isinstance(val,bytes):
             return base64.b64encode(val).decode('utf-8')
@@ -61,6 +62,7 @@ def save_episode(robot_name, curr_episode, episode_dir, max_duration=constants.M
     with open(episode_file,'w') as handle:
         json.dump(curr_episode, handle)
     logger.info('Saved episode for %s to %s', robot_name, episode_file)
+
 
 class RobotEpisodeRecorder(object):
 
@@ -86,6 +88,7 @@ class RobotEpisodeRecorder(object):
             logger.debug('Existing episode for %s',self.robot_name)
             self.curr_episode.append(signal)
 
+
 class EpisodeRecorder(object):
     def __init__(self):
         self.robot_to_episode = {}
@@ -97,16 +100,22 @@ class EpisodeRecorder(object):
         # route the signal through to the right robot recorder
         await self.robot_to_episode[robot_name].on_signal(**signal)
 
+
 async def on_join(session, details):
-    print('connected wamp component')
+    logger.info('wamp component: joining')
     session.subscribe(EpisodeRecorder().on_signal, 'gp.robots', options=ab_types.SubscribeOptions(match='prefix'))
 
+async def on_leave(session, details):
+    logger.info('wamp component: leaving')
+
 def record_episodes(episode_dir, host, wamp_port):
+    logger.info('Starting Episode Recorder')
     # create wamp component
     wamp_component = wamp_utils.get_wamp_component(host, wamp_port)
 
     # subscribe an episode writer
     wamp_component.on_join(on_join)
+    wamp_component.on_leave(on_leave)
 
     # run component
     #wamp_component.start()

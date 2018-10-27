@@ -9,6 +9,9 @@ services:
   web:
     container_name: gp_web 
     build: './docker/web'
+    depends_on:
+      - "wamp"
+      - "redis"
     ports:
      - "8080:80"
     volumes:
@@ -58,12 +61,14 @@ services:
   brain:
     container_name: gp_brain
     build: './docker/brain'
+    depends_on:
+      - "wamp"
+      - "redis"
     volumes:
      - ./volumes/brain_src:/code
      - ./volumes/episodes:/episodes
     working_dir: /code
-    #command: ["python3", "main.py"]
-    command: ["sleep", "999999"] # for debug
+    command: ["python3", "/code/main.py"]
     logging:
       driver: json-file
       options:
@@ -74,6 +79,9 @@ services:
   jupyter:
     container_name: gp_jupyter
     build: './docker/brain'
+    depends_on:
+      - "wamp"
+      - "redis"
     ports:
      - "8888:8888"
     volumes:

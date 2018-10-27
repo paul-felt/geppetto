@@ -70,7 +70,6 @@
       $('#episode-recorder').change(function(){
         checked = $('#episode-recorder').is(':checked');
         // publish this control change back to whoever is listening (robot)
-        console.log('check',checked)
         var message = {
           value : checked ? 'begin' : 'end',
           robot_name : self.robot_name,
