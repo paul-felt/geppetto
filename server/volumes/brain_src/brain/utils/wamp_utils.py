@@ -14,7 +14,7 @@ def get_wamp_component(host, wamp_port):
         realm=u"realm1",
     )
 
-def subscribe_callback(host, wamp_port, callback, channel, match='prefix'):
+def subscribe_and_run_forever(host, wamp_port, callback, channel, match='prefix'):
     # create wamp component
     wamp_component = get_wamp_component(host, wamp_port)
 

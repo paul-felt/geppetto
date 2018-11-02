@@ -100,8 +100,8 @@ class EpisodeRecorder(object):
         # route the signal through to the right robot recorder
         await self.robot_to_episode[robot_name].on_signal(**signal)
 
-def record_episodes(episode_dir, host, wamp_port):
-    wamp_utils.subscribe_callback(host, wamp_port, EpisodeRecorder().on_signal, 'gp.robots')
+def record_episodes_run_forever(episode_dir, host, wamp_port):
+    wamp_utils.subscribe_and_run_forever(host, wamp_port, EpisodeRecorder().on_signal, 'gp.robots')
 
 #async def on_join(session, details):
 #    logger.info('wamp component: joining')

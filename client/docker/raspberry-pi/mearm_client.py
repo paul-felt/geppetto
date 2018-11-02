@@ -1,7 +1,7 @@
 import argparse
 import logging
 import geppetto_client
-from geppetto_client import Control, Sensor, Robot
+from geppetto_client import Control, Sensor, Register
 from picam_sensor import PicamSensor
 from adafruit_pca9685_control import AdaFruitPCA9685Control
 
@@ -16,17 +16,17 @@ if __name__ == '__main__':
     parser.add_argument('--wamp-port', default=5555, type=int, help='The port that the geppetto wamp server is running on')
     args = parser.parse_args()
 
-    # Robot is in charge of adding/removing robots from the rest api
-    with Robot(args.host, args.web_port, args.wamp_port) as robot:
+    # Register is in charge of adding/removing robots from the rest api
+    with Register(args.host, args.web_port, args.wamp_port) as reg:
         # Picam sensor
-        robot.add_sensor(PicamSensor('marion', 'picam'))
+        reg.add_sensor(PicamSensor('marion', 'picam'))
     	### Mearm controls
-        robot.add_control(AdaFruitPCA9685Control('marion', 'twist', 0, min_limit=120, max_limit=420))
-        robot.add_control(AdaFruitPCA9685Control('marion', 'height', 1, min_limit=150, max_limit=280))
-        robot.add_control(AdaFruitPCA9685Control('marion', 'forward', 2, min_limit=280, max_limit=450))
-        robot.add_control(AdaFruitPCA9685Control('marion', 'claw', 3, min_limit=150, max_limit=370))
+        reg.add_control(AdaFruitPCA9685Control('marion', 'twist', 0, min_limit=120, max_limit=420))
+        reg.add_control(AdaFruitPCA9685Control('marion', 'height', 1, min_limit=150, max_limit=280))
+        reg.add_control(AdaFruitPCA9685Control('marion', 'forward', 2, min_limit=280, max_limit=450))
+        reg.add_control(AdaFruitPCA9685Control('marion', 'claw', 3, min_limit=150, max_limit=370))
         # interleave control/sensor logic with asyncio
-        #robot.start_with_asyncio()
+        #reg.start_with_asyncio()
         # run each control/sensor in its own process
-        robot.start_with_multiprocessing()
+        reg.start_with_multiprocessing()
 

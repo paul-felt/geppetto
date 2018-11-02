@@ -199,12 +199,14 @@ def rest_post_robot_info(robot_name):
         add_controls(robot_name, data['controls'])
     if 'sensors' in data:
         add_sensors(robot_name, data['sensors'])
+    db.save() # write data to disk
     return jsonify(get_robot_info(robot_name))
 
 @app.route('/robots/<robot_name>', methods=['DELETE'])
 def rest_delete_robot(robot_name):
     check_robot(robot_name)
     delete_robot(robot_name)
+    db.save() # write data to disk
     return 'ok'
 
 @app.route('/robots/<robot_name>/controls', methods=['GET'])
@@ -227,6 +229,7 @@ def rest_post_control(robot_name, control_name):
         data['control_name'] = control_name
     add_robot_name(robot_name)
     add_control(robot_name, data)
+    db.save() # write data to disk
     return jsonify(get_control_info(robot_name,control_name))
 
 @app.route('/robots/<robot_name>/controls/<control_name>', methods=['DELETE'])
@@ -234,6 +237,7 @@ def rest_delete_control(robot_name, control_name):
     check_robot(robot_name)
     check_control(robot_name,control_name)
     delete_control(robot_name, control_name)
+    db.save() # write data to disk
     return 'ok'
 
 @app.route('/robots/<robot_name>/sensors', methods=['GET'])
@@ -256,6 +260,7 @@ def rest_post_sensor(robot_name, sensor_name):
         data['sensor_name'] = sensor_name
     add_robot_name(robot_name)
     add_sensor(robot_name, data)
+    db.save() # write data to disk
     return jsonify(get_sensor_info(robot_name,sensor_name))
 
 @app.route('/robots/<robot_name>/sensors/<sensor_name>', methods=['DELETE'])
@@ -263,6 +268,7 @@ def rest_delete_sensor(robot_name, sensor_name):
     check_robot(robot_name)
     check_sensor(robot_name,sensor_name)
     delete_sensor(robot_name, sensor_name)
+    db.save() # write data to disk
     return 'ok'
 
 
