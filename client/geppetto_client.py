@@ -81,7 +81,7 @@ class Sensor(Signal):
         self.publishing = False
         self.cleanup()
 
-class Robot(object):
+class Register(object):
     def __init__(self, host, web_port, wamp_port):
         self.host = host
         self.web_port = web_port
@@ -89,53 +89,91 @@ class Robot(object):
         self.sensors = set([])
         self.controls = set([])
 
-    def control_url(self, robot_name, name):
-        return "http://{host}:{port}/robots/{robot_name}/controls/{name}".format(
+    def base_url(self):
+        return "http://{host}:{port}/robots".format(
             host=self.host,
             port=self.web_port,
+        )
+
+    def robot_url(self, robot_name):
+        return "{base_url}/{robot_name}".format(
+            base_url=self.base_url(),
             robot_name=robot_name,
+        )
+
+    def control_url(self, robot_name, name):
+        return "{robot_url}/controls/{name}".format(
+            robot_url=self.robot_url(robot_name),
             name=name,
         )
 
     def sensor_url(self, robot_name, name):
-        return "http://{host}:{port}/robots/{robot_name}/sensors/{name}".format(
-            host=self.host,
-            port=self.web_port,
-            robot_name=robot_name,
+        return "{robot_url}/sensors/{name}".format(
+            robot_url=self.robot_url(robot_name),
             name=name,
         )
 
+    def registered_robot_names(self):
+        robot_names = set([sig.robot_name for sig in self.controls])
+        robot_names = robot_names.union(set([sig.robot_name for sig in self.sensors]))
+        return robot_names
+
+    def registered_control_names(self):
+        return set([sig.name for sig in self.controls])
+
+    def registered_sensor_names(self):
+        return set([sig.name for sig in self.sensors])
+
     def __enter__(self):
-        ' Just make sure the rest interface responds in the most basic way '
-        requests.get("http://{host}:{port}/robots".format(
-            host=self.host,
-            port=self.web_port,
-        ))
+        ' Just make sure the rest interface is responsive by doing some dummy request '
+        requests.get("{}/robots".format(self.base_url()))
         return self
 
     def __exit__(self, type, value, traceback):
         ' Delete from the rest api all sensors and controls in this register '
-        for sensor in self.sensors:
-            url = self.sensor_url(sensor.robot_name, sensor.name)
-            logger.info('DELETE sensor: %s to %s', sensor.channel_name, url)
-            resp = requests.delete(url)
-            logger.info('response: %s', resp.status_code)
-            assert resp.status_code == 200, 'sensor deletion request failed: %s'%resp.text
-            # Note: we can't call sensor.stop() here because we might be 
-            # in a different (parent) process from the actual sensor hardware
-        for control in self.controls:
-            url = self.control_url(control.robot_name, control.name)
-            logger.info('DELETE control: %s to %s', control.channel_name, url)
-            resp = requests.delete(url)
-            logger.info('response: %s', resp.status_code)
-            assert resp.status_code == 200, 'control deletion request failed: %s'%resp.text
-            # Note: we can't call control.stop() here because we might be 
-            # in a different (parent) process from the actual wamp session 
-        # TODO: delete robot itself if necessary
+
+        # Do we fully define this robot? (no other collaborating controls/sensors running elsewhere)
+        for robot_name in self.registered_robot_names():
+            robot_url = self.robot_url(robot_name)
+            resp = requests.get(robot_url)
+            # get remote names
+            control_names = [sig['control_name'] for sig in resp.json().get('controls',[])]
+            sensor_names = [sig['sensor_name'] for sig in resp.json().get('sensors',[])]
+            # get local names
+            my_control_names = [sig.name for sig in self.controls]
+            my_sensor_names = [sig.name for sig in self.sensors]
+            delete_whole_robot = self.registered_control_names().issuperset(control_names) and self.registered_sensor_names().issuperset(sensor_names)
+
+            # If we fully define this robot, delete the whole thing
+            if delete_whole_robot:
+                logger.info('DELETE %s', robot_url)
+                resp = requests.delete(robot_url)
+                logger.info('response: %s', resp.status_code)
+                assert resp.status_code == 200, 'control deletion request failed: %s'%resp.text
+
+            # There are other controls/sensors running elsewhere. Only delete the controls/sensors we own
+            else:
+                # If this unit is only part of the robot, delete the controls/sensors piecemeal
+                for sensor in self.sensors:
+                    url = self.sensor_url(sensor.robot_name, sensor.name)
+                    logger.info('DELETE %s', url)
+                    resp = requests.delete(url)
+                    logger.info('response: %s', resp.status_code)
+                    assert resp.status_code == 200, 'sensor deletion request failed: %s'%resp.text
+                    # Note: we can't call sensor.stop() here because we might be 
+                    # in a different (parent) process from the actual sensor hardware
+                for control in self.controls:
+                    url = self.control_url(control.robot_name, control.name)
+                    logger.info('DELETE %s', url)
+                    resp = requests.delete(url)
+                    logger.info('response: %s', resp.status_code)
+                    assert resp.status_code == 200, 'control deletion request failed: %s'%resp.text
+                    # Note: we can't call control.stop() here because we might be 
+                    # in a different (parent) process from the actual wamp session 
 
     def add_sensor(self, sensor):
         url = self.sensor_url(sensor.robot_name, sensor.name)
-        logger.info('POST sensor: %s to %s', sensor.channel_name, url)
+        logger.info('POST: %s to %s', sensor.channel_name, url)
         resp = requests.post(url, json = {'channel_name':sensor.channel_name,
                                     'mediatype':sensor.get_mediatype()})
         logger.info('response: %s', resp.status_code)
@@ -144,7 +182,7 @@ class Robot(object):
 
     def add_control(self, control):
         url = self.control_url(control.robot_name, control.name)
-        logger.info('POST control: %s to %s', control.channel_name, url)
+        logger.info('POST: %s to %s', control.channel_name, url)
         resp = requests.post(url, json = {'channel_name':control.channel_name,
                                     'limits':control.get_limits()})
         assert resp.status_code == 200, 'control creation request failed: %s'%resp.text

@@ -7,7 +7,7 @@ import sys
 import base64
 
 from autobahn.asyncio.component import Component, run
-from geppetto_client import Control, Sensor, Robot
+from geppetto_client import Control, Sensor, Register
 
 logging.getLogger('requests').setLevel(logging.WARNING)
 logging.basicConfig(level=logging.ERROR)
@@ -35,19 +35,19 @@ if __name__ == '__main__':
     parser.add_argument('--wamp-port', default=5555, type=int, help='The port that the geppetto wamp server is running on')
     args = parser.parse_args()
 
-    # Robot is in charge of adding/removing robots from the rest api
-    with Robot(args.host, args.web_port, args.wamp_port) as robot:
+    # Register is in charge of adding/removing robots from the rest api
+    with Register(args.host, args.web_port, args.wamp_port) as reg:
         # robot 1
-        robot.add_sensor (DummySensor ('mock-robot1','sensor1'))
-        robot.add_sensor (DummySensor ('mock-robot1','sensor2'))
-        robot.add_control(DummyControl('mock-robot1','control1'))
-        robot.add_control(DummyControl('mock-robot1','control2'))
+        reg.add_sensor (DummySensor ('mock-robot1','sensor1'))
+        reg.add_sensor (DummySensor ('mock-robot1','sensor2'))
+        reg.add_control(DummyControl('mock-robot1','control1'))
+        reg.add_control(DummyControl('mock-robot1','control2'))
         # robot 2
-        robot.add_sensor (DummySensor ('mock-robot2','sensor1'))
-        robot.add_sensor (DummySensor ('mock-robot2','sensor2'))
-        robot.add_control(DummyControl('mock-robot2','control1'))
-        robot.add_control(DummyControl('mock-robot2','control2'))
+        reg.add_sensor (DummySensor ('mock-robot2','sensor1'))
+        reg.add_sensor (DummySensor ('mock-robot2','sensor2'))
+        reg.add_control(DummyControl('mock-robot2','control1'))
+        reg.add_control(DummyControl('mock-robot2','control2'))
         ## interleave control/sensor logic with asyncio
-        robot.start_with_asyncio()
+        reg.start_with_asyncio()
         # run each control/sensor in its own process
-        #robot.start_with_multiprocessing()
+        #reg.start_with_multiprocessing()
