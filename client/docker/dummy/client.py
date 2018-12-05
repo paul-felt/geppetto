@@ -23,10 +23,9 @@ class DummySensor(Sensor):
 class DummyControl(Control):
     def get_limits(self):
         return 0,180
-    def apply_control(self, control_info):
-        print('applying control: %s: %s'%(self.channel_name, control_info))
+    def apply_control_value(self, control_value):
+        print('%s-%s: applying control %s' % (self.robot_name, self.name, control_value))
         sys.stdout.flush()
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
