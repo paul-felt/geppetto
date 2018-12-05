@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Option 1: run directly
+cp ../server/volumes/brain_src/brain/constants.py .
 PYTHONPATH=$PYTHONPATH:. python3 docker/raspberry-pi/mearm_client.py --host=plfelt-mbp.local --web-port=8080 --wamp-port=5555
 
 

@@ -10,6 +10,8 @@ from multiprocessing import Process
 
 from autobahn.asyncio import component as autobahn_utils
 
+import constants
+
 logging.getLogger('requests').setLevel(logging.WARNING)
 logging.basicConfig(level=logging.INFO)
 
@@ -74,7 +76,16 @@ class Sensor(Signal):
         logger.info('publishing to sensor: %s',self.channel_name)
         self.publishing = True
         while self.publishing:
-            session.publish(self.channel_name, value=self.get_reading(), robot_name=self.robot_name, name=self.name, source=self.get_source(), signal_type='sensor', mediatype=self.get_mediatype(), ts=int(time.time()*1000))
+            msg = {
+                constants.SIGNAL_VALUE : self.get_reading(),
+                constants.SIGNAL_ROBOT_NAME : self.robot_name,
+                constants.SIGNAL_NAME : self.name,
+                constants.SIGNAL_SOURCE : self.get_source(),
+                constants.SIGNAL_TYPE : constants.SIGNAL_TYPE_SENSOR,
+                constants.SIGNAL_MEDIATYPE : self.get_mediatype(),
+                constants.SIGNAL_TS : int(time.time()*1000)
+            }
+            session.publish(self.channel_name, **msg)
             await asyncio.sleep(self.refresh)
     async def on_leave(self, session, details):
         logger.info('ceased publishing to sensor: %s',self.channel_name)
