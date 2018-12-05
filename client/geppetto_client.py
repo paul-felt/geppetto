@@ -58,7 +58,7 @@ class Control(Signal):
 
 
 class Sensor(Signal):
-    def __init__(self, robot_name, name, refresh=0.1):
+    def __init__(self, robot_name, name, refresh=0.05):
         super().__init__(robot_name, name)
         self.refresh = refresh
         self.channel_name = self.get_channel_name()
