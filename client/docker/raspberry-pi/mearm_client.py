@@ -24,7 +24,7 @@ if __name__ == '__main__':
         reg.add_control(AdaFruitPCA9685Control('marion', 'twist', 0, min_limit=120, max_limit=420))
         reg.add_control(AdaFruitPCA9685Control('marion', 'height', 1, min_limit=150, max_limit=280))
         reg.add_control(AdaFruitPCA9685Control('marion', 'forward', 2, min_limit=280, max_limit=450))
-        reg.add_control(AdaFruitPCA9685Control('marion', 'claw', 3, min_limit=150, max_limit=370))
+        reg.add_control(AdaFruitPCA9685Control('marion', 'claw', 3, min_limit=170, max_limit=370))
         # interleave control/sensor logic with asyncio
         #reg.start_with_asyncio()
         # run each control/sensor in its own process
