@@ -33,8 +33,8 @@
     <!-- Controls -->
     <h3>Controls</h3>
     <div each={ controls }>
-      <p> { control_name } </p>
-      <div id="slider_{control_name}"></div>
+      <p> { name } </p>
+      <div id="slider_{name}"></div>
     </div>
 
   </robot-detail>
@@ -85,7 +85,7 @@
     function buildControlSliders(session){
       for (control_idx in self.controls){
         var control = self.controls[control_idx]
-        var control_name = control['control_name'];
+        var control_name = control['name'];
         var channel_name = control['channel_name'];
         var control_limits = control['limits'];
         // SLIDER
