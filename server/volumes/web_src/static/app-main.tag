@@ -13,9 +13,9 @@
     <h3>Sensors</h3>
     <ul>
       <li each={ sensors }>
-        <image if={mediatype==="video"} id="sensor_{sensor_name}"></image>
+        <image if={mediatype==="video"} id="sensor_{name}"></image>
         <!-- TODO: support other mediatypes -->
-        <audio if={mediatype==="mp3"} id="sensor_{sensor_name}"></audio>
+        <audio if={mediatype==="mp3"} id="sensor_{name}"></audio>
       </li>
     </ul>
 
@@ -178,7 +178,7 @@
       for (sensor_idx in self.sensors){
         var sensor = self.sensors[sensor_idx]
         var channel_name = sensor['channel_name'];
-        var sensor_name = sensor['sensor_name'];
+        var sensor_name = sensor['name'];
 
         // closure to keep sensor name in scope
         (function(sensor_name,channel_name){

@@ -45,7 +45,7 @@ class Control(Signal):
         # make sure it's within limits
         min_limit, max_limit = self.get_limits()
         if not (min_limit <= control_value and control_value <= max_limit):
-            logger.warn('control_value=%s out of range[%s,%s]. Truncating', control_value,self.min_limit,self.max_limit)
+            logger.warn('control value=%s out of range[%s,%s]. Truncating', control_value,self.min_limit,self.max_limit)
             control_value = min(max_limit, control_value)
             control_value = max(min_limit, control_value)
         # pass it on
@@ -148,8 +148,8 @@ class Register(object):
             robot_url = self.robot_url(robot_name)
             resp = requests.get(robot_url)
             # get remote names
-            control_names = [sig['control_name'] for sig in resp.json().get('controls',[])]
-            sensor_names = [sig['sensor_name'] for sig in resp.json().get('sensors',[])]
+            control_names = [sig[constants.SIGNAL_NAME] for sig in resp.json().get('controls',[])]
+            sensor_names = [sig[constants.SIGNAL_NAME] for sig in resp.json().get('sensors',[])]
             # get local names
             my_control_names = [sig.name for sig in self.controls]
             my_sensor_names = [sig.name for sig in self.sensors]

@@ -57,9 +57,9 @@ def add_control(robot_name, control_info):
     # validate and get data
     if not isinstance(control_info,dict):
         abort(400, 'control is not a json object: %s'%control_info)
-    if 'control_name' not in control_info:
-        abort(400, 'control lacks required field: control_name')
-    control_name = control_info['control_name']
+    if 'name' not in control_info:
+        abort(400, 'control lacks required field: name')
+    control_name = control_info['name']
     if 'channel_name' not in control_info:
         abort(400, 'control lacks required field: channel_name')
     channel_name = control_info['channel_name']
@@ -72,9 +72,7 @@ def add_control(robot_name, control_info):
     # add to the set of robots
     db.sadd('robots',robot_name)
     # add to this robot's set of controls
-    print('XXX',robot_name,control_name)
     db.sadd('controls:%s'%robot_name, control_name)
-    print('YYY',get_controls(robot_name))
     # remember this control's channel_name
     db['control-channel:%s:%s'%(robot_name, control_name)] = channel_name
     # remember this control's limits
@@ -98,12 +96,12 @@ def get_control_limits(robot_name, control_name):
             )
 
 def get_control_info(robot_name, control_name):
-    return {'control_name': control_name,
+    return {'name': control_name,
             'limits': get_control_limits(robot_name, control_name),
             'channel_name': get_control_channel(robot_name, control_name)}
 
 def get_sensor_info(robot_name, sensor_name):
-    return {'sensor_name': sensor_name,
+    return {'name': sensor_name,
             'mediatype': get_sensor_mediatype(robot_name, sensor_name),
             'channel_name': get_sensor_channel(robot_name, sensor_name)}
 
@@ -121,9 +119,9 @@ def add_sensor(robot_name, sensor_info):
     # validate and get data
     if not isinstance(sensor_info,dict):
         abort(400, 'sensor is not a json object: %s'%sensor_info)
-    if 'sensor_name' not in sensor_info:
-        abort(400, 'sensor lacks required field: sensor_name')
-    sensor_name = sensor_info['sensor_name']
+    if 'name' not in sensor_info:
+        abort(400, 'sensor lacks required field: name')
+    sensor_name = sensor_info['name']
     if 'channel_name' not in sensor_info:
         abort(400, 'sensor lacks required field: channel_name')
     channel_name = sensor_info['channel_name']
@@ -225,8 +223,8 @@ def rest_post_control(robot_name, control_name):
     if not request.is_json:
         abort(400, 'request must be application/json')
     data = request.get_json()
-    if 'control_name' not in data:
-        data['control_name'] = control_name
+    if 'name' not in data:
+        data['name'] = control_name
     add_robot_name(robot_name)
     add_control(robot_name, data)
     db.save() # write data to disk
@@ -256,8 +254,8 @@ def rest_post_sensor(robot_name, sensor_name):
     if not request.is_json:
         abort(400, 'request must be application/json')
     data = request.get_json()
-    if 'sensor_name' not in data:
-        data['sensor_name'] = sensor_name
+    if 'name' not in data:
+        data['name'] = sensor_name
     add_robot_name(robot_name)
     add_sensor(robot_name, data)
     db.save() # write data to disk
