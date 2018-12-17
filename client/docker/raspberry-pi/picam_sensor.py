@@ -10,7 +10,7 @@ class PicamSensor(Sensor):
         self.image_gen = None
         super(PicamSensor, self).__init__(robot_name, sensor_name)
     def get_mediatype(self):
-        return 'video'
+        return 'jpeg'
     def get_reading(self):
         if self.image_gen is None:
             print('initializing camera with resolution: %s'%str(self.dims))
