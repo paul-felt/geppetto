@@ -4,7 +4,6 @@ import time
 import requests
 import asyncio
 import sys
-import base64
 
 from autobahn.asyncio.component import Component, run
 from geppetto_client import Control, Sensor, Register
@@ -13,8 +12,10 @@ logging.getLogger('requests').setLevel(logging.WARNING)
 logging.basicConfig(level=logging.ERROR)
 
 class DummySensor(Sensor):
+    def get_shape(self):
+        return 640, 480
     def get_mediatype(self):
-        return 'video'
+        return 'jpeg'
     def get_reading(self):
         if not hasattr(self,'bytes'):
             self.bytes = bytes(open('./mountain.jpg','rb').read())

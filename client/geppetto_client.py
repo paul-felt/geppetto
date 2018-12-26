@@ -68,6 +68,8 @@ class Sensor(Signal):
         return 'gp.robots.{}.sensors.{}'.format(self.robot_name, self.name)
     def get_source(self):
         return 'robot'
+    def get_shape(self):
+        raise NotImplementedError()
     def get_reading(self):
         raise NotImplementedError()
     def get_mediatype(self):
@@ -83,6 +85,7 @@ class Sensor(Signal):
                 constants.SIGNAL_SOURCE : self.get_source(),
                 constants.SIGNAL_TYPE : constants.SIGNAL_TYPE_SENSOR,
                 constants.SIGNAL_MEDIATYPE : self.get_mediatype(),
+                constants.SIGNAL_SHAPE: self.get_shape(),
                 constants.SIGNAL_TS : int(time.time()*1000)
             }
             session.publish(self.channel_name, **msg)
@@ -186,6 +189,7 @@ class Register(object):
         url = self.sensor_url(sensor.robot_name, sensor.name)
         logger.info('POST: %s to %s', sensor.channel_name, url)
         resp = requests.post(url, json = {'channel_name':sensor.channel_name,
+                                    'shape':sensor.get_shape(),
                                     'mediatype':sensor.get_mediatype()})
         logger.info('response: %s', resp.status_code)
         assert resp.status_code == 200, 'sensor creation request failed: %s'%resp.text
