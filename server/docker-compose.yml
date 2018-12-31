@@ -68,7 +68,7 @@ services:
      - ./volumes/brain_src:/code
      - ./volumes/episodes:/episodes
     working_dir: /code
-    command: ["python3", "/code/main.py", "--web-port=8080", "--wamp-port=5555"]
+    command: ["/code/main.sh", "8080", "5555"]
     logging:
       driver: json-file
       options:

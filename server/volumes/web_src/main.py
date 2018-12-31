@@ -103,6 +103,7 @@ def get_control_info(robot_name, control_name):
 def get_sensor_info(robot_name, sensor_name):
     return {'name': sensor_name,
             'mediatype': get_sensor_mediatype(robot_name, sensor_name),
+            'shape': get_sensor_shape(robot_name, sensor_name),
             'channel_name': get_sensor_channel(robot_name, sensor_name)}
 
 def get_robot_info(robot_name):
@@ -128,6 +129,7 @@ def add_sensor(robot_name, sensor_info):
     if 'mediatype' not in sensor_info:
         abort(400, 'sensor lacks required field: mediatype')
     mediatype = sensor_info['mediatype']
+    shape = sensor_info['shape']
     # add to the set of robots
     add_robot_name(robot_name)
     # add to this robot's set of sensors
@@ -136,6 +138,8 @@ def add_sensor(robot_name, sensor_info):
     db['sensor-channel:%s:%s'%(robot_name, sensor_name)] = channel_name
     # remember this sensor's mediatype
     db['sensor-mediatype:%s:%s'%(robot_name, sensor_name)] = mediatype
+    # remember this sensor's shape
+    db['sensor-shape:%s:%s'%(robot_name, sensor_name)] = ','.join(str(v) for v in shape)
     app.logger.info('added sensor to %s: %s', robot_name, sensor_info)
 
 def add_sensors(robot_name, sensor_infos):
@@ -154,6 +158,9 @@ def get_sensor_channel(robot_name, sensor_name):
 
 def get_sensor_mediatype(robot_name, sensor_name):
     return db.get('sensor-mediatype:%s:%s'%(robot_name, sensor_name)).decode('utf-8')
+
+def get_sensor_shape(robot_name, sensor_name):
+    return tuple( int(v) for v in db.get('sensor-shape:%s:%s'%(robot_name, sensor_name)).decode('utf-8').split(',') )
 
 ########################################################################
 # HTTP communication (browser <--> server)

@@ -13,7 +13,7 @@
     <h3>Sensors</h3>
     <ul>
       <li each={ sensors }>
-        <image if={mediatype==="video"} id="sensor_{name}"></image>
+        <image if={mediatype==="jpeg"} id="sensor_{name}"></image>
         <!-- TODO: support other mediatypes -->
         <audio if={mediatype==="mp3"} id="sensor_{name}"></audio>
       </li>

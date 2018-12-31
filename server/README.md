@@ -7,7 +7,7 @@ Useful dev commands:
   - `docker ps`: get a list of running containers
   - `docker exec -ti <container_name> /bin/bash`: get a console running in a container
   - `docker logs <container_name>`: see logs from the given container
-
+  - `docker-compose stop brain; docker-compose up brain`: restart just the brain container
 
 WAMP channels
 Sensor signals: gp.robots.<robot_name>.sensors.<sensor_name>

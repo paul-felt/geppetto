@@ -6,6 +6,7 @@ import json
 import asyncio
 import sys
 import logging
+import random
 from collections import defaultdict
 from autobahn.asyncio import component as ab_utils
 from autobahn.wamp import types as ab_types
@@ -63,6 +64,27 @@ def save_episode(robot_name, curr_episode, episode_dir, max_duration=constants.M
         json.dump(curr_episode, handle)
     logger.info('Saved episode for %s to %s', robot_name, episode_file)
 
+def load_episode(robot_name, episode):
+    ' return the indicated episode '
+    episode_path = os.path.join(constants.EPISODE_DIR,robot_name,episode)
+    with open(episode_path) as handle:
+        return json.load(handle)
+
+def list_episodes(robot_name):
+    ' get a list of all the episodes associated with <robot_name> '
+    episode_dir = os.path.join(constants.EPISODE_DIR,robot_name)
+    try:
+        return os.listdir(episode_dir)
+    except OSError:
+        return []
+
+def load_random_episode(robot_name):
+    ' returns a random episode for the given robot, or None if none exists '
+    episodes = list_episodes(robot_name)
+    if len(episodes)==0:
+        return None
+    else:
+        return load_episode(robot_name, random.choice(episodes))
 
 class RobotEpisodeRecorder(object):
 
@@ -103,22 +125,3 @@ class EpisodeRecorder(object):
 def record_episodes_run_forever(episode_dir, host, wamp_port):
     wamp_utils.subscribe_and_run_forever(host, wamp_port, EpisodeRecorder().on_signal, 'gp.robots')
 
-#async def on_join(session, details):
-#    logger.info('wamp component: joining')
-#    session.subscribe(EpisodeRecorder().on_signal, 'gp.robots', options=ab_types.SubscribeOptions(match='prefix'))
-#
-#async def on_leave(session, details):
-#    logger.info('wamp component: leaving')
-#
-#def record_episodes(episode_dir, host, wamp_port):
-#    logger.info('Starting Episode Recorder')
-#    # create wamp component
-#    wamp_component = wamp_utils.get_wamp_component(host, wamp_port)
-#
-#    # subscribe an episode writer
-#    wamp_component.on_join(on_join)
-#    wamp_component.on_leave(on_leave)
-#
-#    # run component
-#    ab_utils.run([wamp_component])
-#

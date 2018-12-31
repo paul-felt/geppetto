@@ -43,22 +43,29 @@ class Brain(object):
             planner = planning.PrintingPlanner(self.robot_info, self.session)
         elif self.planner_name.lower() == 'twitch':
             planner = planning.TwitchPlanner(self.robot_info, self.session)
+        elif self.planner_name.lower() == 'single-step-dl':
+            planner = planning.SingleStepDLPlanner(self.robot_info, self.session)
         else:
             logger.info('unknown planner {}. Defaulting to noop'.format(self.planner_name))
             planner = planning.NoopPlanner(self.robot_info, self.session)
         world_state, plan = planner.init()
         while True:
-            logger.info('ACTION')
-            # we want to sleep here long enough to let the signal routine to batch up all incoming data
+            # we want to sleep here long enough to let the signal routine batch up all incoming data
             await asyncio.sleep(0.1) # context switch once per prediction cycle to get more 
             # update world_state, plan
-            world_state, plan = await planner.update(world_state, plan, self.batch)
-            self.batch = []
-            # stats
-            count += 1
-            if count % 1000==0:
-                logger.info('refresh rate={:.3f} per sec'.format(count/(time.time()-start_ts)))
-                count, start_ts = 0, time.time()
+            if planner.is_time_to_act(self.batch):
+                logger.info('Main Brain: ACT')
+                world_state, plan = await planner.update(world_state, plan, self.batch)
+                self.batch = []
+                # stats
+                count += 1
+                if count % 1000==0:
+                    logger.info('refresh rate={:.3f} per sec'.format(count/(time.time()-start_ts)))
+                    count, start_ts = 0, time.time()
+            # slip in training whenever we don't need to act
+            else:
+                logger.info('Main Brain: TRAIN')
+                await planner.train()
 
 
 def main_brain_process(robot_name, planner_name, episode_dir, host, web_port, wamp_port):
@@ -97,8 +104,9 @@ if __name__ == '__main__':
     parser.add_argument('--web-port', default='8080')
     parser.add_argument('--wamp-port', default='5555')
     #parser.add_argument('--planner', default='noop')
-    parser.add_argument('--planner', default='print')
+    #parser.add_argument('--planner', default='print')
     #parser.add_argument('--planner', default='twitch')
+    parser.add_argument('--planner', default='single-step-dl')
     args = parser.parse_args()
 
     # set up logging
