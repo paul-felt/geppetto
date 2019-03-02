@@ -5,7 +5,7 @@ import logging
 import numpy as np
 import keras
 from keras import Model
-from keras.layers import Input, Conv2D, MaxPool2D, Dropout, Flatten, concatenate
+from keras.layers import Input, Conv2D, MaxPool2D, Dropout, Flatten, concatenate, add, Activation
 from keras.layers import Dense, RepeatVector, TimeDistributed
 
 from brain import constants
@@ -24,21 +24,21 @@ def predict_as_dict(model, batch):
 ############################################################
 # Input Sub-models
 ############################################################
-def create_jpeg_input_model(sensor_info, name, xforms=2):
+def create_jpeg_input_model(sensor_info, name, xforms=3):
     ' very basic convolutional image model '
     rgb_jpeg_shape = list(reversed(sensor_info[constants.SIGNAL_SHAPE])) + [3,] # the shape is the shape of the image with 3 color channels (RGB)
     image_input = Input(shape=rgb_jpeg_shape)
     layer = image_input
 
-    # CNN transforms
+    # CNN transforms 
     for i in range(xforms):
-    
-        layer = Conv2D(10, (3,3), activation='relu') (layer)
+        #layer = Conv2D(64*(i+1), (3,3), activation='relu') (layer)
+        layer = Conv2D(3, (3,3), activation='relu') (layer)
         layer = MaxPool2D((2,2)) (layer)
-        layer = Dropout(0.2) (layer)
 
     # Smash down into a single vector
     flat_vector = Flatten()(layer)
+    flat_vector = Dropout(0.5) (flat_vector)
 
     model = Model(inputs=image_input, outputs=flat_vector, name=name)
     print("##################### %s ########################" % name)
@@ -78,6 +78,9 @@ def create_end_to_end_model1(robot_info, world_state_size=50, plan_size=20):
     # Sensor submodels
     sensor_input_submodels = [create_input_model_for(sensor_info) for sensor_info in sensor_infos]
 
+    # previous control values
+    previous_control_inputs = [Input((1,), name='prev_%s'%control_info[constants.SIGNAL_NAME]) for control_info in control_infos]
+
     # create inputs based on the sensor submodel inputs, and then the models over them
     sensor_inputs = [input_from_submodel(input_model) for input_model in sensor_input_submodels]
     sensor_vecs = [sensor_model(sensor_input) for sensor_model,sensor_input in zip(sensor_input_submodels,sensor_inputs)]
@@ -85,23 +88,29 @@ def create_end_to_end_model1(robot_info, world_state_size=50, plan_size=20):
     # combine sensor vector representations
     sensor_summary_vec = concatenate(sensor_vecs) if len(sensor_vecs) > 1 else sensor_vecs[0]
 
-    # Sensor vector -> World state vector
-    world_state_vec = Dense(world_state_size, activation='relu') (sensor_summary_vec)
-    #print("????????????? DEBUG ???????????????")
-    #Model(inputs=sensor_inputs, outputs=world_state_vec).summary()
-
-    # World state vector -> Plan 
-    plan = Dense(plan_size) (world_state_vec)
-
-    # World state + Plan -> output voltages
-    num_controls = len(control_infos)
-    actions_input = concatenate([world_state_vec, plan])
+    ## Sensor vector -> World state vector
+    #world_state_vec = Dense(world_state_size, activation='relu') (sensor_summary_vec)
+    ##print("????????????? DEBUG ???????????????")
+    ##Model(inputs=sensor_inputs, outputs=world_state_vec).summary()
+    #
+    ## World state vector -> Plan 
+    #plan = Dense(plan_size) (world_state_vec)
+    #
+    ## World state + Plan -> output voltages
+    #num_controls = len(control_infos)
+    #actions_input = concatenate([world_state_vec, plan])
+    actions_input = sensor_summary_vec # simpler version
     actions_output = []
-    for control_info in control_infos:
-        actions_output.append( Dense(1,activation='sigmoid', name=control_info[constants.SIGNAL_NAME])(actions_input) )
+    for control_info,prev_val in zip(control_infos, previous_control_inputs):
+        # sensors -> control feature 
+        control_features = Dense(1,activation='sigmoid', name='%s_feature'%control_info[constants.SIGNAL_NAME])(actions_input)
+        # add control feature to previous control value
+        control_features = add([control_features,prev_val], name='add_prev_%s'%control_info[constants.SIGNAL_NAME])
+        # normalize 0..1 again
+        actions_output.append( Activation('sigmoid', name=control_info[constants.SIGNAL_NAME]) (control_features) )
 
-    model = Model(inputs=sensor_inputs, outputs=actions_output)
-    model.compile(optimizer='adam', loss='binary_crossentropy')
+    model = Model(inputs=sensor_inputs+previous_control_inputs, outputs=actions_output)
+    model.compile(optimizer='adam', loss='mse')
     print("########################################## MAIN MODEL #############################################")
     model.summary()
     return model

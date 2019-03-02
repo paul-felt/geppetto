@@ -73,9 +73,9 @@ class TestSensorHandling(unittest.TestCase):
         #print('ccc testcam',batch['testcam'])
         self.assertTrue( np.all( batch['testcam'] == np.array([
                                                             [[[0.,0.,0.]]],
-                                                            [[[255.,255.,255.]]],
-                                                            [[[255.,255.,255.]]],
-                                                            [[[255.,255.,255.]]],
+                                                            [[[1.,1.,1.]]],
+                                                            [[[1.,1.,1.]]],
+                                                            [[[1.,1.,1.]]],
         ]) ) )
 
         #print('ddd testcam2_mask',batch['testcam2_mask'])
@@ -84,8 +84,8 @@ class TestSensorHandling(unittest.TestCase):
         self.assertTrue( np.all( batch['testcam2'] == np.array([
                                                             [[[0.,0.,0.]]],
                                                             [[[0.,0.,0.]]],
-                                                            [[[255.,255.,255.]]],
-                                                            [[[255.,255.,255.]]],
+                                                            [[[1.,1.,1.]]],
+                                                            [[[1.,1.,1.]]],
         ]) ) )
         
         

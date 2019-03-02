@@ -69,6 +69,7 @@ services:
      - ./volumes/episodes:/episodes
     working_dir: /code
     command: ["/code/main.sh", "8080", "5555"]
+    #command: ["/code/test.sh"] # just run tests
     logging:
       driver: json-file
       options:
@@ -84,6 +85,8 @@ services:
       - "redis"
     ports:
      - "8888:8888"
+    environment:
+      - PASSWORD=myGeppettoNotebook3
     volumes:
      - ./volumes/notebooks:/notebooks
      - ./volumes/brain_src/brain:/notebooks/brain

@@ -48,14 +48,14 @@ class Brain(object):
         else:
             logger.info('unknown planner {}. Defaulting to noop'.format(self.planner_name))
             planner = planning.NoopPlanner(self.robot_info, self.session)
-        world_state, plan = planner.init()
+        state = planner.init_state()
         while True:
             # we want to sleep here long enough to let the signal routine batch up all incoming data
             await asyncio.sleep(0.1) # context switch once per prediction cycle to get more 
             # update world_state, plan
             if planner.is_time_to_act(self.batch):
                 logger.info('Main Brain: ACT')
-                world_state, plan = await planner.update(world_state, plan, self.batch)
+                state = await planner.update(state, self.batch)
                 self.batch = []
                 # stats
                 count += 1

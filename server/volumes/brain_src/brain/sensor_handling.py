@@ -2,6 +2,7 @@ import numpy as np
 import base64
 from io import BytesIO
 from PIL import Image
+from keras.preprocessing.image import ImageDataGenerator
 import logging
 
 from brain import constants
@@ -20,7 +21,47 @@ def parse_image_from_data(jpgdata):
     img = Image.open(file_jpgdata)
     return img
 
+
+##--------------------------------------------------
+#from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
+#
+#datagen = ImageDataGenerator(
+#        rotation_range=40,
+#        width_shift_range=0.2,
+#        height_shift_range=0.2,
+#        shear_range=0.2,
+#        zoom_range=0.2,
+#        horizontal_flip=True,
+#        fill_mode='nearest')
+#
+#img = load_img('data/train/cats/cat.0.jpg')  # this is a PIL image
+#x = img_to_array(img)  # this is a Numpy array with shape (3, 150, 150)
+#x = x.reshape((1,) + x.shape)  # this is a Numpy array with shape (1, 3, 150, 150)
+#
+## the .flow() command below generates batches of randomly transformed images
+## and saves the results to the `preview/` directory
+#i = 0
+#for batch in datagen.flow(x, batch_size=1,
+#                          save_to_dir='preview', save_prefix='cat', save_format='jpeg'):
+#    i += 1
+#    if i > 20:
+#        break  # otherwise the generator would loop indefinitely
+##--------------------------------------------------
+
+
 def jpeg_formatter(sensor_info, default_value=0):
+
+    img_preprocessor = ImageDataGenerator(
+        rescale=1./255,
+        #rotation_range=40,
+        #width_shift_range=0.2,
+        #height_shift_range=0.2,
+        #shear_range=0.2,
+        #zoom_range=0.2,
+        #horizontal_flip=False,
+        #fill_mode='nearest'
+    )
+
     def jpeg_formatter_impl(signal_info):
         if signal_info is not None:
             # PIL image
@@ -30,8 +71,13 @@ def jpeg_formatter(sensor_info, default_value=0):
             # create a fake picture and stuff it full of default values
             pic = Image.new(mode='RGB', size=sensor_info[constants.SIGNAL_SHAPE])
             pic.putdata([(default_value,default_value,default_value)] * np.prod(sensor_info[constants.SIGNAL_SHAPE]))
-        # np array that is (width, height, channel)
-        return np.array(pic)
+        # img -> np.array with shape = (width, height, channel)
+        pic = np.array(pic)
+        # preprocess the image for model inference
+        # Note: preprocessor expects to be doing batches, so it needs an empty leading dimension
+        pic = pic.reshape((1,) + pic.shape)  
+        pic = iter(img_preprocessor.flow(pic)).next()[0] # pull the preprocessed image and ditch the extra dimension
+        return pic
     return jpeg_formatter_impl
 
 ############################################################

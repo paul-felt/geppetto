@@ -1,11 +1,29 @@
+import logging
 import numpy as np
 
 from brain import constants
 
-def scale_to_limits(value, control_info):
+logger = logging.getLogger(__file__)
+
+def scale_between_0_and_1(value, control_info):
+    ' take a raw control value (between the min and max limits) and scale it to between 0 and 1 '
+    min_lim, max_lim = control_info.get('limits',[None,None])
+    return ( value - min_lim ) / ( max_lim - min_lim )
+
+def scale_to_control_limits(value, control_info):
+    ' take a normalized (between 0 and 1) control value and scale it between the min and max control limits '
     min_lim, max_lim = control_info.get('limits',[None,None])
     span = max_lim - min_lim
     return (value * span) + min_lim
+
+def shift_forward(batch_inputs, prefix='prev_', default=0.5, prev_batch=None):
+    ' shift all control values forward one timestep, and add the given prefix to the column names '
+    shifted = {}
+    for col,vals in batch_inputs.items():
+        col_default = default if prev_batch is None else prev_batch[col][-1]
+        newname = '%s%s' % (prefix, col)
+        shifted[newname] = np.concatenate( ([col_default], vals[:-1]) )
+    return shifted
 
 ############################################################
 # Main - Data formatting
@@ -34,10 +52,12 @@ def format_data(batch, control_infos, prev_batch=None, default_value=0.5):
     # Note: the following logic doesn't even attempt to time-align different controls. There's room for improvement here
     for info in control_infos:
         name = info[constants.SIGNAL_NAME]
+
         # create a column for this control
         col, col_mask = [], []
-        # initialize our value (for padding)
-        val = default_value if prev_batch is None else prev_batch[name][-1]
+        # initialize our value (for padding). The default_value is defined between 0-1, so we need to scale it out to match the other raw data.
+        scaled_default_value = scale_to_control_limits(default_value, info)
+        val = scaled_default_value if prev_batch is None else prev_batch[name][-1]
 
         # now work through the batch, formatting each entry or inserting the previous value as padding
         for item in batch:
@@ -53,8 +73,7 @@ def format_data(batch, control_infos, prev_batch=None, default_value=0.5):
             col_mask.append(mask_val)
 
         # Scale each column between 0 and 1 using the limits defined in the control info
-        min_val, max_val = info[constants.SIGNAL_LIMITS]
-        col_vals = ( np.array(col, dtype=np.float32) - min_val ) / max_val
+        col_vals = scale_between_0_and_1(np.array(col, dtype=np.float32), info)
 
         # add the new column (and its mask) as a numpy array in the batch
         fmt_batch[ name ] = col_vals
