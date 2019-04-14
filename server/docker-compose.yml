@@ -57,39 +57,41 @@ services:
         max-size: "100K"
         max-file: "10"
 
-  # Brain: robot processing loops that train and execute robot behaviors
-  brain:
-    container_name: gp_brain
-    build: './docker/brain'
-    depends_on:
-      - "wamp"
-      - "redis"
-    volumes:
-     - ./volumes/brain_src:/code
-     - ./volumes/episodes:/episodes
-    working_dir: /code
-    command: ["/code/main.sh", "8080", "5555"]
-    #command: ["/code/test.sh"] # just run tests
-    logging:
-      driver: json-file
-      options:
-        max-size: "100K"
-        max-file: "10"
+  ## Brain: robot processing loops that train and execute robot behaviors
+  #brain:
+  #  container_name: gp_brain
+  #  build: './docker/brain2'
+  #  depends_on:
+  #    - "wamp"
+  #    - "redis"
+  #  volumes:
+  #   - ./volumes/brain_src:/code
+  #   - ./volumes/episodes:/episodes
+  #  working_dir: /code
+  #  #command: ["/code/main.sh", "8080", "5555"]
+  #  command: ["/code/test.sh"] # just run tests
+  #  logging:
+  #    driver: json-file
+  #    options:
+  #      max-size: "100K"
+  #      max-file: "10"
 
   # Brain notebooks: jupyter notebooks to prototype/visualize models
   jupyter:
     container_name: gp_jupyter
-    build: './docker/brain'
+    build: './docker/brain2'
     depends_on:
       - "wamp"
       - "redis"
     ports:
      - "8888:8888"
     environment:
-      - PASSWORD=myGeppettoNotebook3
+      - PASSWORD=geppetto
     volumes:
      - ./volumes/notebooks:/notebooks
      - ./volumes/brain_src/brain:/notebooks/brain
+    command: ["/bin/bash", "/openai-jupyter-start.sh"]
+    #command: ["sleep", "9999999999999"]
     logging:
       driver: json-file
       options:

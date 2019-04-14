@@ -1,0 +1,10 @@
+autobahn[asyncio]==18.10.1
+#autobahn[twisted]==18.10.1
+keras
+redis
+requests
+gym[atari]
+mpi4py
+pyglet
+tensorflow
+jupyter
