@@ -2,6 +2,6 @@ autobahn[asyncio]==18.10.1
 #autobahn[twisted]==18.10.1
 keras==2.2.4
 redis==2.10.3 
-requests==2.20.0
+requests==2.31.0
 gym[atari]==0.12.0
 mpi4py
